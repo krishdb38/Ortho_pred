@@ -17,9 +17,7 @@ import argparse
 import datetime
 
 print ("="*77)
-#print ("\t"*2+" "*4+"owPReMark for Linux version 1.0 (C) 2013")
-#print ("\t"*6+" "*4+"JungWon Park, Sunshin Kim")
-#print ("\t"*6+" "*2+"GPLv3 Licence (see LICENCE)")
+
 print ("="*77)
 
 

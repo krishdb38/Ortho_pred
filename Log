@@ -1,0 +1,10 @@
+2020-02-28 09:25:55.938902
+mode : 1
+genomes : species\AAE 
+cpu_count : 1
+blastp matrix : BLOSUM45
+Species : ./species/
+Blastp : /usr/bin/blastp
+Score file : ./score_file/
+Blastp_data : ./blastp_data/
+save rawblastp score : False
