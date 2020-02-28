@@ -21,7 +21,7 @@ print("Adhikari Krishna ")
 print ("="*77)
 
 
-parser = argparse.ArgumentParser(description = 'The owPReMark is a program to detect ortholog between the protein sequences from different genomes and to cluster orthologs to ortholog groups. ', 
+parser = argparse.ArgumentParser(description = 'This is a program to detect ortholog between the protein sequences from different genomes and to cluster orthologs to ortholog groups. ', 
                                  add_help=True, prefix_chars='-+')
 essential_group = parser.add_argument_group('essential arguments')
 blastp_group = parser.add_argument_group('blastp optional arguments')
@@ -697,35 +697,51 @@ def Parallel_Matrix_Divide_Using_Numpy(data):
     return numpy.divide(matrix_element, sum_data)
 
 def Read_Species_List(pr=0):
-    """ If pr is 1, it will print "Species_List". """ 
-    read_species =glob.glob(command_options.Species+"*")   
-    selected_species_dic = {}
-    backward_selected_species_dic = {}
+    """ If pr is 1, it will print "Species_List"
+    Other wise only return the Value in dic Format """ 
+    read_species =glob.glob(command_options.Species+"*")  #os.listdir() can be used 
+    selected_species_dic = {}  #list 
+    backward_selected_species_dic = {} #list
+    #in Python2 selected_species_dic , and  backward_selected_species_dic is global variable 
     #number = 0
-    for i, species in enumerate(sorted(read_species), start=1):
-        selected_species_dic[i] = species.split('/')[-1]
-        backward_selected_species_dic[species.split('/')[-1]] = i 
+    for i, species in enumerate(sorted(read_species), start=1): #
+        selected_species_dic[i] = species.split('\\')[-1] #in window linux /
+        backward_selected_species_dic[species.split('\\')[-1]] = i 
         if pr == 1 :
-            print (str(i)+".", species.split('/')[-1])
+            print (str(i)+".", species.split('\\')[-1])
         number = i
     return selected_species_dic, backward_selected_species_dic, number
         
 def Del_File(path, file):
-    del_file =subprocess.Popen(["rm "+path+file], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    del_file_stream = del_file.communicate()   
-    if not del_file_stream[1]:
-        print ("Done to del "+path+file)
-    elif del_file_stream[1]:
-        print (del_file_stream[1])
+ #   "Delete the Unnecessary file according to path and file name passed"
+ #  del_file =subprocess.Popen(["rm "+path+file], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+ #   del_file_stream = del_file.communicate()   
+ #   if not del_file_stream[1]:
+ #       print ("Done to del "+path+file)
+ #   elif del_file_stream[1]:
+ #       print (del_file_stream[1])
+ import os
+ try:
+    os.remove(path+file)
+    print("File Successfully Removed")
+ except:
+     print("Check the File or Path")
+
         
 def Check_File(file):
+    "Check the file weather exist or not"
+    #Declare all variable as a globally Added
+    global Cluster_out , threshold_score , infinite_loop
     file_list = glob.glob(file+'*')    
     if (Cluster_out+"_geneID_S"+str(threshold_score)+"_"+str(inflation_factor) or Cluster_out+"_KO_ID_S"+str(threshold_score)+"_"+str(inflation_factor)) in file_list:
         print ("Please, set other name of output.")
         sys.exit(2)
         
             
-def Read_Equal_BBH(path):            
+def Read_Equal_BBH(path):
+    "Read_Equal BBH by user path"
+    global threshold_score
+
     with open(path+"_oneway_threshold_best_hit_S"+str(threshold_score), 'r') as equal_RBH:                          
         for j in equal_RBH:                    
             split_data = j.split()
@@ -741,15 +757,13 @@ def Read_Equal_BBH(path):
     except : 
         pass
 def Read_Unequal_BBH(path):
+    "Read unequal BBH path passed by User"
     with open(path+"_oneway_threshold_best_hit_S"+str(threshold_score), 'r') as unequal_RBH:
         for j in unequal_RBH:
             split_data = j.split()
             split_data[2] = int(split_data[2])        
             unequal_BBH_data.append(split_data)
         
-
-
-
 print ("Blastp = ", command_options.Blastp)
 print ("Blastp_data = ", command_options.Blastp_data)
 print ("blstp_matrix = ", command_options.blastp_matrix)
@@ -766,29 +780,38 @@ print ("Species : ", command_options.Species)
 print ("verbose : ", command_options.verbose)
 print ()
  
-if not sys.argv[1:]:    
+if not sys.argv[1:]:
+    "If not Parameter Passed the Manual Process will Start"  
+
     print ("1. BLASTP. \n2. BLASTP using precalculated data. \n3. Clustering.\n")
     mode = input(">> Select a mode or modes (1 or 2 or 1 3 or 2 3): ")    
     selected_species_dic, backward_selected_species_dic, number_i = Read_Species_List(pr=1)
     
-    selected_number= input(">> Select an genomes to detect orthologs(e.g. 1 2 3 4 5 or 1-5) : ")
+    #Comment this
+    #print(selected_species_dic,"\n\n",backward_selected_species_dic)
+    
+    
+    selected_number= input(">> Select Genomes to detect Orthologs(e.g. 1 2 3 4 5 or 1-5) : ")
     
     if selected_number.find('-') > 0:
+        #find() return the index position of first occurance
         SN=selected_number.split("-")
-        if int(SN[-1]) > number_i:
-            print ("\nWrong typing! Try again!\n")
+        if int(SN[-1]) > number_i:      #number_i is length of Genome file inside folder exit the process
+            print ("\nWrongInput\nInput must be less than",number_i)
             sys.exit(2)
         else :
             user_selected_number=range(int(SN[0]),int(SN[-1])+1)
             for j in user_selected_number:
-                print (selected_species_dic[j], end=" ")
+                print (selected_species_dic[j], end=" ") #loop in Dic
             print ("are selected!!")
         
     else :        
-        user_selected_number = sorted(set([int(read_species) for read_species in selected_number.split()]))                      
+        user_selected_number = sorted(set([int(read_species) for read_species in selected_number.split()]))
+        #Create a set (remove repeating)                      
         if int(user_selected_number[-1]) > number_i:
-            print ("\nWrong typing! Try again!\n")
+            print ("\nWrongInput\nInput must be less than",number_i)
             sys.exit(2)
+            # Greater than Genome list will system error
         else :
             for j in user_selected_number:
                 print (selected_species_dic[j], end=" ")
@@ -796,7 +819,7 @@ if not sys.argv[1:]:
         
     blastp_matrix = GetMatrixNumber()
 
-    cpu_count = int(input("The processors of CPU are detected. You can use %s processors.\nIf you input >= 2, The Remark will run a parallel computation for the blastp.\n" % multiprocessing.cpu_count()
+    cpu_count = int(input("You can use %s processors.\nIf you input >= 2, The Program will run a parallel computation for the blastp.\n" % multiprocessing.cpu_count()
                           + "Enter the number of process to use in this program (1 ~ %s): " % multiprocessing.cpu_count()))
     if "3" in mode :
         inflation_factor = input("Enter the inflation factor to cluster: ")
@@ -869,12 +892,14 @@ elif "2" in mode:
     backward_best_hit_work_list = Oneway_Threshold_Best_Hit(mode)
     if not backward_best_hit_work_list == []: # If backward_best_hit_work_list is an empty list, pool instance can't finsh the work.                
         pool = multiprocessing.Pool(cpu_count)
+        #multiprocessing.pool() for Parallel 
         results = pool.map(Backward_Best_Hit,backward_best_hit_work_list)
         pool.close()
         pool.join()
     else : results = [0,0]
     
-Del_File("./", "query*")
+#Del_File("./", "query*") #Delete all files start with query
+
 finish_time_OBH = time.time()
 blastp_time_log = float(((finish_time_OBH - start_time_OBH)/60))
 print  ("BLASTP searches + forward best Hit + backwardbest hit took %f minutes" % blastp_time_log)
@@ -898,6 +923,7 @@ if "3" in mode :
     gene_id_dic = {}    
       
     with open("myva=gb", "r") as id_read:
+        #myvba=gb is a database
         for i in id_read:
             gene_name, gene_id=i.split()
             gene_id_dic[gene_id.replace("\n","")] = gene_name # remove "\n"
@@ -953,5 +979,4 @@ if "3" in mode :
         with open(Log_file_name, 'a') as log:
             log.write("Ortholog count : "+str(ortholog_count)+","+" Cluster count : "+str(cluster_count-1)+"\n")    
             log.write("MCL algorithm and Ortholog Clustering took "+str(mcl_time_log)+" minutes\n")
-            log.write("Remark program took "+str(remark_time_log)+ "minutes\n")
-
+            log.write("XXX program took "+str(remark_time_log)+ "minutes\n")

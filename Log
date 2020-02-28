@@ -1,6 +1,6 @@
-2020-02-28 09:25:55.938902
-mode : 1
-genomes : species\AAE 
+2020-02-28 14:43:08.596597
+mode : 2
+genomes : AAE 
 cpu_count : 1
 blastp matrix : BLOSUM45
 Species : ./species/
