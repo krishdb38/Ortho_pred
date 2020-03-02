@@ -835,8 +835,6 @@ elif sys.argv[1:] :
     selected_species_dic, backward_selected_species_dic, number_i = Read_Species_List()
     user_selected_number = [backward_selected_species_dic[ele] for ele in genomes]
     Cluster_out = command_options.Cluster_out   
-    
-
 Species = command_options.Species
 Blastp = command_options.Blastp
 Score_file = command_options.Score_file
@@ -845,7 +843,6 @@ save_raw_blastp_score = command_options.save_raw_blastp_score
 threshold_score = command_options.threshold_score
 verbose = command_options.verbose
 infinite_loop = command_options.infinite_loop
-
 if "3" in mode :
     Check_File(Cluster_out)
     
@@ -898,7 +895,7 @@ elif "2" in mode:
         pool.join()
     else : results = [0,0]
     
-#Del_File("./", "query*") #Delete all files start with query
+ #Del_File("./", "query*") #Delete all files start with query
 
 finish_time_OBH = time.time()
 blastp_time_log = float(((finish_time_OBH - start_time_OBH)/60))
