@@ -161,6 +161,7 @@ def RunBlast(subject, parallel_num):
     import subprocess
     "By this Function it will create a Pipe line to run Blastp in Computer by input Parameter"
     print("Rnunning Run_Blast")
+    print("Passed Parallel Number is ",parallel_num)
     subject = Species+subject 
     cmd = [Blastp, "-query", "./query"+"_"+str(parallel_num), "-subject", subject,
                                 "-matrix", blastp_matrix, "-outfmt", "10 qseqid sseqid score length"]  
@@ -270,14 +271,22 @@ def DivisionParallelQuery(queryV, query_division_value, cpu_count, queryV_len):
     return parallel_query
     
 def RunParallelQuery(species_of_query, species_of_subject,queryV, parallel_num):    
-    """ Run the following functions. WriteQuery, RunBlast, Get_Same_Species_Forward_Best_Hit, GetForwardBestHit
-    Save the files which are oneway_threshold_best_hit, second_oneway_threshold_best_hit, blastp_score_split_list and raw_blastp_score (optional) by each species. """
+    """ RunParallelQuery(i ,k , queryV , cpu_count) i and k are user selected number in a list Format
+    Run the following functions. WriteQuery, RunBlast, Get_Same_Species_Forward_Best_Hit, GetForwardBestHit
+    Save the files which are oneway_threshold_best_hit, second_oneway_threshold_best_hit, 
+    blastp_score_split_list and raw_blastp_score (optional) by each species. 
+    parallel_num is the Number of CPU selected by the user if CPu 1 selected then 1 """
+
     print("RunParallelQuery Running")
-    bar = Bar('Processing '+str(parallel_num), max = len(queryV)) #progressing bar setting           
+    global selected_number, selected_species_dic
+    bar = Bar('Processing '+str(parallel_num), max = len(queryV)) #progressing bar setting , Creating a Object      
     for j in queryV:
         bar.next() #progressing bar print
-        WriteQuery(j,parallel_num)        
-        blastp_score  = RunBlast(selected_species_dic[species_of_subject], parallel_num)        
+        WriteQuery(j,parallel_num)   
+        #This Function Only Write a file with j name and parallel_num i.e CPU Count
+            
+        blastp_score  = RunBlast(selected_species_dic[species_of_subject], parallel_num)
+
         if blastp_score != '': # Check whether blastp_score has the value
             
             best_score, blastp_score_split_list = GetForwardBestHit(blastp_score.decode())
@@ -315,24 +324,32 @@ def RunParallelQuery(species_of_query, species_of_subject,queryV, parallel_num):
     bar.finish() # progressing bar finish 
     return 
     
-def Oneway_Threshold_Best_Hit(mode):   
+def Oneway_Threshold_Best_Hit(mode):
+    """ This Function accept the mode and Run program and return backward_best_hit_work_list  """
     print("OneWay_Threshold_Best_Hit running") 
+    global user_selected_number , cpu_count 
     process_list = []
     backward_best_hit_work_list = []
+    
     if "1" in mode:
+        # We have 3 Mode 1 is for blastp 
         for i in user_selected_number: #Select species to write query    
             queryV = GetQuerySequence(selected_species_dic[i])
-            for k in user_selected_number: #Select of subject
-                if k < i: # gene ====> query 1->1 1->2 1->3 2->2 2->3  
+            # queryV is a list Format  with a position gene id , Seq
+            for k in user_selected_number: ##User Selected  [1, 3, 5] is list of User input
+                if k < i: # gene ====> query 1->1 1->2 1->3 2->2 2->3  Forward checking will skip the same or less
                     continue
                 
                 else :
-                    print ("Doing the blastp & forward best hit searches between %s genome and %s genome" % (selected_species_dic[i], selected_species_dic[k]))
-                    
-                    queryV_len = len(queryV)
+                    print ("Doing the blastp & forward best hit searches between %s genome and %s genome"\
+                        %(selected_species_dic[i], selected_species_dic[k]))
+                        # this will Create a loop though 2 times
+                 
+                    queryV_len = len(queryV)  #length of Genome gene ID in Sequence File
                     if cpu_count == 1:
-                        blastp_time_start = time.time()
+                        blastp_time_start = time.time() # Calculate time 
                         RunParallelQuery(i, k, queryV, cpu_count)
+                        #
                         blastp_time_end = time.time()
                         print ("The blastp & forward best hit searches took %.2f minutes" % ((blastp_time_end-blastp_time_start)/60))
                     else :
@@ -864,8 +881,8 @@ threshold_score = command_options.threshold_score
 verbose = command_options.verbose
 infinite_loop = command_options.infinite_loop
 
-print("This is for checking ")
-print(command_options.Species ,command_options.Blastp ,command_options.Score_file)
+#print("This is for checking ")
+#print(command_options.Species ,command_options.Blastp ,command_options.Score_file)
 
 if "3" in mode :
     Check_File(Cluster_out)
@@ -898,7 +915,7 @@ with open(Log_file_name, 'w') as log:
         log.write("\n")   
     
 start_time_OBH = time.time()   
-if "1" in mode :            
+if "1" in mode :    # 1 is for Blastp Run         
     backward_best_hit_work_list = Oneway_Threshold_Best_Hit(mode)    
     pool = multiprocessing.Pool(cpu_count)    
     results = pool.map(Backward_Best_Hit,backward_best_hit_work_list)
@@ -927,7 +944,8 @@ print  ("BLASTP searches + forward best Hit + backwardbest hit took %f minutes" 
 with open(Log_file_name, 'a') as log:
     log.write("Backward_Best_Hit took "+str(max(results))+" minutes\n")
     log.write("BLASTP + Best_Hit + backward_best_hit searches took "+str(blastp_time_log)+" minutes\n")
-          
+
+
 if "3" in mode :
     start_time_clustering = time.time()
     ##########################################################################################
