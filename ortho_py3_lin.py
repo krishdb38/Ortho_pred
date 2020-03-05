@@ -68,8 +68,7 @@ blastp_group.add_argument('-s','--species',
                              help='set the path of species directory. The default is  "./species/".')
 blastp_group.add_argument('-b','--blastp', 
                              action='store', 
-                             #default ='/usr/bin/blastp', #For Linux
-                             default= "blastp", #For Windows
+                             default ='/usr/bin/blastp', 
                              dest='Blastp', 
                              help='set the path of blastp file to run the blastp program. The default is "blastp".')
 blastp_group.add_argument('-F','--scorefile', 
@@ -114,9 +113,7 @@ def GetMatrixNumber():
         """This Function will Return the Matrix name choosed by User 
         We will exit program first if user input Wrong info"""
         import sys
-        print("BLOcks SUbstitution Matrix (BLOSUM) is a Substitution matrix used for sequence alignment of Proteins")
-        print ("""\n1. BLOSUM45 :-For more distantly related Proteins alignment DataBase\n2. BLOSUM62 :- MidRange Seq with more than 62%similarity\
-         \n3. BLOSUM82 :- More related Proteins\nAny other Key to exit -- Quit""")
+        print ("\n1. BLOSUM45\n2. BLOSUM62\n3. BLOSUM82\n4. Quit")
 
         metrix_num = input("\nEnter a matrix number: ")
         if metrix_num not in ("1","2",'3'):
@@ -160,7 +157,6 @@ def WriteQuery(query, parallel_num):
 def RunBlast(subject, parallel_num):
     import subprocess
     "By this Function it will create a Pipe line to run Blastp in Computer by input Parameter"
-    print("Rnunning Run_Blast")
     subject = Species+subject 
     cmd = [Blastp, "-query", "./query"+"_"+str(parallel_num), "-subject", subject,
                                 "-matrix", blastp_matrix, "-outfmt", "10 qseqid sseqid score length"]  
@@ -178,7 +174,6 @@ def RunBlast(subject, parallel_num):
 def Get_Same_Species_Forward_Best_Hit(blastp_score): 
     """Search the forward best hit among the blastp scores of same species. Because there are an duplicated genes in a same genome.
     When the blastp score compare with blastp score of duplicate gene, if score and length are same, blasp score of duplicated gene is added to a second best score.""" 
-    print("Rnunning Get_Same_Sp0ecies_Forward_Best_Hit")
     blastp_score_split_list = []                   
     temp_best_score =['-1','-1','-1']
     second_temp_best_score = []
@@ -213,7 +208,6 @@ def Get_Same_Species_Forward_Best_Hit(blastp_score):
 
 def GetForwardBestHit(blastp_score):
     """Search the forward best hit among the blastp scores of same species."""
-    print("Rnunning GetForward BestHit")
     blastp_score_split_list = []
     temp_best_score =['-1','-1','-1']
     second_temp_best_score = []
@@ -241,7 +235,6 @@ def GetForwardBestHit(blastp_score):
     return best_score, blastp_score_split_list
 
 def DivisionParallelQuery(queryV, query_division_value, cpu_count, queryV_len):
-    print("Rnunning DivisionParallelQuery")
     parallel_query = []
     parallel_query_start = 0
     
@@ -272,7 +265,6 @@ def DivisionParallelQuery(queryV, query_division_value, cpu_count, queryV_len):
 def RunParallelQuery(species_of_query, species_of_subject,queryV, parallel_num):    
     """ Run the following functions. WriteQuery, RunBlast, Get_Same_Species_Forward_Best_Hit, GetForwardBestHit
     Save the files which are oneway_threshold_best_hit, second_oneway_threshold_best_hit, blastp_score_split_list and raw_blastp_score (optional) by each species. """
-    print("RunParallelQuery Running")
     bar = Bar('Processing '+str(parallel_num), max = len(queryV)) #progressing bar setting           
     for j in queryV:
         bar.next() #progressing bar print
@@ -315,8 +307,7 @@ def RunParallelQuery(species_of_query, species_of_subject,queryV, parallel_num):
     bar.finish() # progressing bar finish 
     return 
     
-def Oneway_Threshold_Best_Hit(mode):   
-    print("OneWay_Threshold_Best_Hit running") 
+def Oneway_Threshold_Best_Hit(mode):    
     process_list = []
     backward_best_hit_work_list = []
     if "1" in mode:
@@ -415,7 +406,6 @@ def Oneway_Threshold_Best_Hit(mode):
     return backward_best_hit_work_list
  
 def Backward_Best_Hit(args):
-    print("Running Backward_Best_Hit")
     species_of_query, species_of_subject, queryV_len = args    
     start_time_BBH = time.time()
     forward_best_hit_score_list = []
@@ -485,8 +475,7 @@ def Backward_Best_Hit(args):
     return RBH_time
 
 def Search_Equal_BBH_Data(target_A):
-    """Search the equal backward best hit data. ex) AAE_AAE_backward_best_hit """    
-    print("Search_Equal_BBH_Data")    
+    """Search the equal backward best hit data. ex) AAE_AAE_backward_best_hit """        
     put_data = equal_BBH_data_dic[target_A]
     if put_data[1] == 0:
         pass
@@ -509,7 +498,6 @@ def Search_Equal_BBH_Data(target_A):
 
 def Search_Unequal_BBH_Data(target_B):
     """Search the unequal backward best hit data. ex) AAE_CAC_backward_best_hit"""
-    print("Search_Unequal_BBH_Data")
     for i in unequal_BBH_data:
         if i[2] == 0 :
             pass
@@ -522,7 +510,6 @@ def Search_Unequal_BBH_Data(target_B):
 
 def Matching_BBH(target):
     """ Match the backward best hit """ 
-    print("running Matching_BBH")
     if target[2] == 0 :
         return 
     
@@ -553,7 +540,6 @@ def Matching_BBH(target):
                  
 def Generating_Matrix_Clustering_Ortholog(element_set, bar):  
     """ Generate the matrix of clustering ortholog. """
-    print("Generating_Matrix_Clustering_Ortholog")
     row_data = []
     col_data = []
     temp_results = queue.Queue()  
@@ -594,8 +580,7 @@ def Generating_Matrix_Clustering_Ortholog(element_set, bar):
             score_matrix = MCL(score_matrix)
         Clustering(row_data, col_data, score_matrix)    
    
-def Parallel_MCL(score_matrix):
-    print("Parallel_MCL")   
+def Parallel_MCL(score_matrix):    
     count = 0
     infinitesimal_value = 10**-10
     idempotent_matrix = numpy.matlib.ones((2,2))   
@@ -803,14 +788,15 @@ print ()
  
 if not sys.argv[1:]:
     "If not Parameter Passed the Manual Process will Start"  
+
     print ("1. BLASTP. \n2. BLASTP using precalculated data. \n3. Clustering.\n")
-    mode = input(">> Select a mode or modes (1 or 2 or 1 3 or 2 3): ")
-    if int(mode) not in (1,2,3):
-        print("Wrong Input !! require between 1,2,3")
-        sys.exit(2)    
+    mode = input(">> Select a mode or modes (1 or 2 or 1 3 or 2 3): ")    
     selected_species_dic, backward_selected_species_dic, number_i = Read_Species_List(pr=1)
+    
     #Comment this
     #print(selected_species_dic,"\n\n",backward_selected_species_dic)
+    
+    
     selected_number= input(">> Select Genomes to detect Orthologs(e.g. 1 2 3 4 5 or 1-5) : ")
     
     if selected_number.find('-') > 0:
@@ -823,7 +809,7 @@ if not sys.argv[1:]:
             user_selected_number=range(int(SN[0]),int(SN[-1])+1)
             for j in user_selected_number:
                 print (selected_species_dic[j], end=" ") #loop in Dic
-            print ("Selected!!")
+            print ("are selected!!")
         
     else :        
         user_selected_number = sorted(set([int(read_species) for read_species in selected_number.split()]))
@@ -835,12 +821,13 @@ if not sys.argv[1:]:
         else :
             for j in user_selected_number:
                 print (selected_species_dic[j], end=" ")
-            print ("Selected!!")
+            print ("are selected!!"       )
+        
     blastp_matrix = GetMatrixNumber()
+
     cpu_count = int(input("You can use %s processors.\nIf you input >= 2, The Program will run a parallel computation for the blastp.\n" % multiprocessing.cpu_count()
                           + "Enter the number of process to use in this program (1 ~ %s): " % multiprocessing.cpu_count()))
     if "3" in mode :
-        "3 is for BLOSUM82"
         inflation_factor = input("Enter the inflation factor to cluster: ")
         Cluster_out = input("Set the name of clustering output : ")
         
@@ -854,7 +841,6 @@ elif sys.argv[1:] :
     selected_species_dic, backward_selected_species_dic, number_i = Read_Species_List()
     user_selected_number = [backward_selected_species_dic[ele] for ele in genomes]
     Cluster_out = command_options.Cluster_out   
-
 Species = command_options.Species
 Blastp = command_options.Blastp
 Score_file = command_options.Score_file
@@ -863,10 +849,6 @@ save_raw_blastp_score = command_options.save_raw_blastp_score
 threshold_score = command_options.threshold_score
 verbose = command_options.verbose
 infinite_loop = command_options.infinite_loop
-
-print("This is for checking ")
-print(command_options.Species ,command_options.Blastp ,command_options.Score_file)
-
 if "3" in mode :
     Check_File(Cluster_out)
     
@@ -875,7 +857,7 @@ Del_File(Score_file, "*")
 if "3" in mode :
     Log_file_name = Cluster_out+"_S"+str(threshold_score)+"_"+str(inflation_factor)+".log"
 elif not "3" in mode :
-    Log_file_name = 'Log.txt'   #log file rename + .txt
+    Log_file_name = 'Log'   
 
 with open(Log_file_name, 'w') as log:
         log.write(str(datetime.datetime.now()))
