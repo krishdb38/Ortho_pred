@@ -196,7 +196,7 @@ def Get_Same_Species_Forward_Best_Hit(blastp_score):
         elif k[0] != k[1]:            
             if int(k[2]) > int(temp_best_score[2]) : #Compare score
                 temp_best_score = k
-            elif int(k[2]) == int(temp_best_score[2]):
+            elif int(k[2]) == int(temp_best_score[2]):  # Is Equal
                 if int(k[3]) > int(temp_best_score[3]): #compare length
                     temp_best_score = k
                 elif int(k[3]) == int(temp_best_score[3]):
@@ -207,7 +207,8 @@ def Get_Same_Species_Forward_Best_Hit(blastp_score):
         if j[2] == temp_best_score[2] and j[3] == temp_best_score[3]:
             second_best_score.append(j)
     for m in second_best_score:
-        if (best_score[0][2] == m[2] and int(best_score[0][3]) <= int(m[3])) or int(best_score[0][2]) < int(m[2]): # '104' < '23' is True because of string. So the int function is used.
+        if (best_score[0][2] == m[2] and int(best_score[0][3]) <= int(m[3])) or int(best_score[0][2]) < int(m[2]):
+             # '104' < '23' is True because of string. So the int function is used.
             best_score.append(m)
      
     return best_score
@@ -286,19 +287,20 @@ def RunParallelQuery(species_of_query, species_of_subject,queryV, parallel_num):
         #This Function Only Write a file with j name and parallel_num i.e CPU Count
             
         blastp_score  = RunBlast(selected_species_dic[species_of_subject], parallel_num)
-
+        #Return Byte File type
         if blastp_score != '': # Check whether blastp_score has the value
+            best_score, blastp_score_split_list = GetForwardBestHit(blastp_score.decode()) # .decode() Convert in to str format
             
-            best_score, blastp_score_split_list = GetForwardBestHit(blastp_score.decode())
-
             if species_of_query == species_of_subject: # ex) AAE == AAE. It will save best_score without reversing RunBlast. 
                 same_species_forward_best_score = Get_Same_Species_Forward_Best_Hit(blastp_score.decode())
                 for best_score_element in same_species_forward_best_score:
                     if best_score_element[0] == best_score_element[1]:  #  ex) [A1 of AAE, A1 of AAE, 30]                                           
                    
-                        with open(Score_file+selected_species_dic[species_of_query]+"_"+selected_species_dic[species_of_subject]+"_oneway_threshold_best_hit_S"+str(threshold_score), "a") as oneway_threshold_best_hit:
+                        with open(Score_file+selected_species_dic[species_of_query]+"_"+selected_species_dic[species_of_subject]+\
+                            "_oneway_threshold_best_hit_S"+str(threshold_score), "a") as oneway_threshold_best_hit:
                             
-                            save_best_score = selected_species_dic[species_of_query]+"_"+best_score_element[0].split("\s")[0]+" "+selected_species_dic[species_of_subject]+"_"+best_score_element[1].split("\s")[0]+" "+best_score_element[2]+"\n" # best_score_element[0].split("|") ==> ['gi', '15642790', 'ref', 'NP_227831.1', '']
+                            save_best_score = selected_species_dic[species_of_query]+"_"+best_score_element[0].split("\s")[0]+\
+                                " "+selected_species_dic[species_of_subject]+"_"+best_score_element[1].split("\s")[0]+" "+best_score_element[2]+"\n" # best_score_element[0].split("|") ==> ['gi', '15642790', 'ref', 'NP_227831.1', '']
                             oneway_threshold_best_hit.write(save_best_score)
                             
                     else: # ex) [A1 of AAE, A2 of AAE, 30]
@@ -384,7 +386,8 @@ def Oneway_Threshold_Best_Hit(mode):
         for i in user_selected_number: #Select species to write query    
             queryV = GetQuerySequence(selected_species_dic[i])
             for k in user_selected_number: #Select of subject                               
-                if Blastp_data+selected_species_dic[i]+"_"+selected_species_dic[k]+"_oneway_threshold_best_hit_S"+str(threshold_score) in precalculated_data_list :
+                if Blastp_data+selected_species_dic[i]+"_"+selected_species_dic[k]+"_oneway_threshold_best_hit_S"+\
+                    str(threshold_score) in precalculated_data_list :
                     used_precalculated_data_list.append(selected_species_dic[i]+"_"+selected_species_dic[k])
                     continue
                 else :                              
