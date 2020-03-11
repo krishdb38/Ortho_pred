@@ -280,12 +280,13 @@ def RunParallelQuery(species_of_query, species_of_subject,queryV, parallel_num):
 
     print("RunParallelQuery Running")
     global selected_number, selected_species_dic
-    bar = Bar('Processing '+str(parallel_num), max = len(queryV)) #progressing bar setting , Creating a Object      
+
+    #bar = Bar('Processing '+str(parallel_num), max = len(queryV)) #progressing bar setting , Creating a Object  
+    # bar is not Supported in Python 3    
     for j in queryV:
-        bar.next() #progressing bar print
+        #bar.next() #progressing bar not supported 
         WriteQuery(j,parallel_num)   
-        #This Function Only Write a file with j name and parallel_num i.e CPU Count
-            
+        #This Function Only Write a file with j name and parallel_num i.e CPU Count   
         blastp_score  = RunBlast(selected_species_dic[species_of_subject], parallel_num)
         #Return Byte File type
         if blastp_score != '': # Check whether blastp_score has the value
@@ -334,7 +335,9 @@ def Oneway_Threshold_Best_Hit(mode):
     backward_best_hit_work_list = []
     
     if "1" in mode:
+        print("Blastp Mode is Selected")
         # We have 3 Mode 1 is for blastp 
+        # Mode 2 is for BLASTP using precalcualted data and Mode 3 is for Clustering
         for i in user_selected_number: #Select species to write query    
             queryV = GetQuerySequence(selected_species_dic[i])
             # queryV is a list Format  with a position gene id , Seq
