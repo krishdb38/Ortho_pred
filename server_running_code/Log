@@ -1,0 +1,10 @@
+2020-03-12 18:25:54.985910
+mode : 1
+genomes : chicken.protein.faa 
+cpu_count : 5
+blastp matrix : BLOSUM62
+Species : ./species/
+Blastp : /usr/bin/blastp
+Score file : ./score_file/
+Blastp_data : ./blastp_data/
+save rawblastp score : False

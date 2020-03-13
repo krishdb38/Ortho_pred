@@ -267,7 +267,7 @@ def RunParallelQuery(species_of_query, species_of_subject,queryV, parallel_num):
     Save the files which are oneway_threshold_best_hit, second_oneway_threshold_best_hit, blastp_score_split_list and raw_blastp_score (optional) by each species. """
     bar = Bar('Processing '+str(parallel_num), max = len(queryV)) #progressing bar setting           
     for j in queryV:
-        bar.next() #progressing bar print
+        #bar.next() #progressing bar print
         WriteQuery(j,parallel_num)        
         blastp_score  = RunBlast(selected_species_dic[species_of_subject], parallel_num)        
         if blastp_score != '': # Check whether blastp_score has the value
@@ -406,7 +406,7 @@ def Oneway_Threshold_Best_Hit(mode):
     return backward_best_hit_work_list
  
 def Backward_Best_Hit(args):
-    species_of_query, species_of_subject, queryV_len = args    
+    species_of_query, species_of_subject, queryV_len = args #3 arguments input  
     start_time_BBH = time.time()
     forward_best_hit_score_list = []
     blastp_score_split_list = []    
@@ -583,11 +583,12 @@ def Generating_Matrix_Clustering_Ortholog(element_set, bar):
 def Parallel_MCL(score_matrix):    
     count = 0
     infinitesimal_value = 10**-10
-    idempotent_matrix = numpy.matlib.ones((2,2))   
+    idempotent_matrix = numpy.matlib.ones((2,2))  #np.ones() same function in Newer Numpy 
     
     while idempotent_matrix.sum() > infinitesimal_value: # > infinitesimal_value 
         MCL_time_start = time.time()        
         pool = multiprocessing.Pool(cpu_count) # create a expansion_matrix  
+        #multiprocessing.Pool(processes=None,initializer=None,initargs=(),maxtasksperchild=None,) PARAMETER
         multiplication_results = pool.map(Parallel_Matrix_Multiplication_Using_Numpy, zip(score_matrix,repeat(score_matrix)))
         pool.close()
         pool.join()
@@ -625,14 +626,18 @@ def Parallel_MCL(score_matrix):
             print (" MCL time : %f, count : %d, matrix size : %d * %d" % ((MCL_time_finish - MCL_time_start)/60, count, score_matrix[0].size, score_matrix[0].size)                     )
     return score_matrix    
     
-def MCL(score_matrix):    
+def MCL(score_matrix):
+    "This Function run MCL "  
     count = 0
     infinitesimal_value = 10**-10
-    idempotent_matrix = numpy.matlib.ones((2,2))    
+    idempotent_matrix = numpy.matlib.ones((2,2))  #np.ones(2,2)
+    #In linear algebra, an idempotent matrix is a matrix which, when multiplied by itself, yields itself.
+    # A^2 = A , {\displaystyle A{\text{ idempotent}}\quad \iff \quad A^{2}=A}
+
     while idempotent_matrix.sum() > infinitesimal_value: # > infinitesimal_value 
         MCL_time_start = time.time()        
         expansion_matrix = score_matrix ** 2      
-        score_matrix = numpy.power(expansion_matrix, inflation_factor)
+        score_matrix = numpy.power(expansion_matrix, inflation_factor) #np.power(matrix, int)
         score_matrix_sum =  score_matrix.sum(axis = 0)
         score_matrix = numpy.divide(score_matrix, score_matrix_sum) # create a inflation_matrix        
         idempotent_matrix =abs(score_matrix - expansion_matrix) # identify whether inflation_matrix is idempotent matrix or not.        
@@ -699,6 +704,7 @@ def Parallel_Matrix_Power_Using_Numpy(matrix_element):
     return power_matrix_element
 
 def Parallel_Matrix_Divide_Using_Numpy(data):
+    "data is 2 input may be as list or Tuple.First is matrix_element , and sum_data"
     matrix_element, sum_data = data
     return numpy.divide(matrix_element, sum_data)
 
@@ -711,10 +717,10 @@ def Read_Species_List(pr=0):
     #in Python2 selected_species_dic , and  backward_selected_species_dic is global variable 
     #number = 0
     for i, species in enumerate(sorted(read_species), start=1): #
-        selected_species_dic[i] = species.split('\\')[-1] #in window linux /
-        backward_selected_species_dic[species.split('\\')[-1]] = i 
+        selected_species_dic[i] = species.split('/')[-1] #in window linux /
+        backward_selected_species_dic[species.split('/')[-1]] = i 
         if pr == 1 :
-            print (str(i)+".", species.split('\\')[-1])
+            print (str(i)+".", species.split('/')[-1])
         number = i
     return selected_species_dic, backward_selected_species_dic, number
         
