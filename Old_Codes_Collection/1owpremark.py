@@ -155,7 +155,8 @@ def WriteQuery(query, parallel_num):
         print "IOError occurred in WriteQuery function : " + str(err)
         
 def RunBlast(subject, parallel_num):
-    subject = Species+subject       
+    subject = Species+subject
+    print "Subject , parallel_num" , subject , parallel_num       
     run_blastp =subprocess.Popen([Blastp, "-query", "./query"+"_"+str(parallel_num), "-subject", subject,
                                 "-matrix", blastp_matrix, "-outfmt", "10 qseqid sseqid score length"],
                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE)

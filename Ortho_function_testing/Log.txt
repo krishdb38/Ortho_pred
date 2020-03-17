@@ -1,8 +1,8 @@
-2020-03-17 13:58:08.386245
+2020-03-16 13:42:49.164049
 mode : 1
-genomes : A C 
+genomes : AAE 
 cpu_count : 1
-blastp matrix : BLOSUM45
+blastp matrix : BLOSUM62
 Species : ./species/
 Blastp : blastp
 Score file : ./score_file/

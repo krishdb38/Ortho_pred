@@ -1,8 +1,10 @@
-2020-03-17 13:58:08.386245
-mode : 1
-genomes : A C 
+2020-03-16 10:15:11.856087
+mode : 3
+genomes : AAE 
 cpu_count : 1
 blastp matrix : BLOSUM45
+inflation_factor : 1
+Cluster out : 
 Species : ./species/
 Blastp : blastp
 Score file : ./score_file/

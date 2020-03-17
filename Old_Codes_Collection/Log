@@ -1,10 +1,10 @@
-2020-03-17 13:58:08.386245
+2020-03-16 08:58:10.026679
 mode : 1
-genomes : A C 
-cpu_count : 1
-blastp matrix : BLOSUM45
+genomes : HIN 
+cpu_count : 50
+blastp matrix : BLOSUM62
 Species : ./species/
-Blastp : blastp
+Blastp : /usr/bin/blastp
 Score file : ./score_file/
 Blastp_data : ./blastp_data/
 save rawblastp score : False

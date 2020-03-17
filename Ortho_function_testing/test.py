@@ -43,19 +43,3 @@ def Read_Species_List(pr=0):
                 print (str(i)+".", species.split('//')[-1])
             number = i
     return selected_species_dic, backward_selected_species_dic, number
-
-def info(title):
-    print(title)
-    print("Module Name",__name__)
-    print("Parent Process ", os.getppid())
-    print("Process Id" , os.getpid())
-
-def f(name):
-    info("function f")
-    print("hello", name)
-
-if __name__ == "__main__":
-    info("main lline")
-    p = Process(target = f, args = ("bob",))
-    p.start()
-    p.join()
