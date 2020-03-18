@@ -1,14 +1,16 @@
 #!/usr/bin/python
-import sys,os # For system operation
+import glob  # To view files
+import sys
+import os   # For system operation
 import subprocess
-
+import pdb
 import time
 #from progress.bar import Bar
 from alive_progress import alive_bar
 import multiprocessing
-import queue   # For Multiprocessing
-import numpy.matlib  
-import numpy  as np     # For Mathmatical (Algebra) Operation 
+import queue
+import numpy.matlib
+import numpy
 import copy
 import operator
 import pprint
@@ -20,7 +22,7 @@ from Bio import SeqIO  # For Bio Python Sequence Object
 
 
 print("="*77)
-print(" Adhikari Krishna ")
+print("Adhikari Krishna ")
 print("="*77)
 
 
@@ -116,6 +118,7 @@ command_options = parser.parse_args()
 def GetMatrixNumber():
         """This Function will Return the Matrix name choosed by User 
         We will exit program first if user input Wrong info"""
+        import sys
         print("BLOcks SUbstitution Matrix (BLOSUM) is a Substitution matrix used for sequence alignment of Proteins")
         print("""\n1. BLOSUM45 :-For more distantly related Proteins alignment DataBase\n2. BLOSUM62 :- MidRange Seq with more than 62%similarity\
          \n3. BLOSUM82 :- More related Proteins\nAny other Key to exit -- Quit""")
@@ -136,19 +139,19 @@ def GetQuerySequence(genome):
     """This Function Read Fastaq Files and return as a list Format with gene Position as a index
     Later I will reduce code Lengths and Speed"""
     #print("GetQuerySequence() is Running")
-    gene_seq = ""
-    gene_seq_list = []
+    gene_sequence = ""
+    gene_sequence_list = []
     try:
         with open(Species+genome) as gene:
             for each_line in gene:
                 if ">" in each_line:
-                    if gene_seq != "":
-                        gene_seq_list.append(gene_seq)
-                        gene_seq = ""
-                gene_seq = gene_seq+each_line
-            gene_seq_list.append(gene_seq)
+                    if gene_sequence != "":
+                        gene_sequence_list.append(gene_sequence)
+                        gene_sequence = ""
+                gene_sequence = gene_sequence+each_line
+            gene_sequence_list.append(gene_sequence)
             #print("GetQuerySequence() Run Successfully")
-            return gene_seq_list
+            return gene_sequence_list
 
     except IOError as err:
         print("IOError occurred in GetQuerySequence function : " + str(err))
@@ -689,8 +692,7 @@ def Generating_Matrix_Clustering_Ortholog(element_set):
 
     # create a new matrix of given shape(the size_resuls) and type, filled with zeros.
     score_matrix = numpy.matlib.zeros(
-        (len(row_data), len(col_data)), dtype=np.float)
-        #np.zeros() can be used, will test later, 
+        (len(row_data), len(col_data)), dtype=numpy.float)
     while not temp_results.empty():
         get_temp_results = temp_results.get()
         row = get_temp_results[0]
@@ -745,14 +747,14 @@ def Parallel_MCL(score_matrix):
             if i == 0:
                 score_matrix = divide_results[i]
             else:
-                score_matrix = np.concatenate(
+                score_matrix = numpy.concatenate(
                     (score_matrix, divide_results[i]), axis=0)
 
         sum_results = 0
         for i in multiplication_results:
             sum_results += i
         # identify whether inflation_matrix is idempotent matrix or not.
-        idempotent_matrix = abs(np.sum(score_matrix) - sum_results)
+        idempotent_matrix = abs(numpy.sum(score_matrix) - sum_results)
 
         count += 1
         if count > infinite_loop:  # It will prevent the infinite loop of MCL algorithm.
@@ -768,14 +770,13 @@ def MCL(score_matrix):
     count = 0
     infinitesimal_value = 10**-10
     idempotent_matrix = numpy.matlib.ones((2, 2))
-    #idempotent_matrix = np.ones((2,2))
     while idempotent_matrix.sum() > infinitesimal_value:  # > infinitesimal_value
         MCL_time_start = time.time()
         expansion_matrix = score_matrix ** 2
-        score_matrix = np.power(expansion_matrix, inflation_factor)
+        score_matrix = numpy.power(expansion_matrix, inflation_factor)
         score_matrix_sum = score_matrix.sum(axis=0)
         # create a inflation_matrix
-        score_matrix = np.divide(score_matrix, score_matrix_sum)
+        score_matrix = numpy.divide(score_matrix, score_matrix_sum)
         # identify whether inflation_matrix is idempotent matrix or not.
         idempotent_matrix = abs(score_matrix - expansion_matrix)
         count += 1
@@ -850,13 +851,13 @@ def Parallel_Matrix_Multiplication_Using_Numpy(data):
 
 
 def Parallel_Matrix_Power_Using_Numpy(matrix_element):
-    power_matrix_element = np.power(matrix_element, inflation_factor)
+    power_matrix_element = numpy.power(matrix_element, inflation_factor)
     return power_matrix_element
 
 
 def Parallel_Matrix_Divide_Using_Numpy(data):
     matrix_element, sum_data = data
-    return np.divide(matrix_element, sum_data)
+    return numpy.divide(matrix_element, sum_data)
 
 
 def Read_Species_List(pr=1):  # default 1 which will always shows the name of Species
@@ -893,8 +894,7 @@ def Check_File(file):
     "Check the file weather exist or not  This will run after Mode 3 is selected"
     #Declare all variable as a globally Added
     global Cluster_out, threshold_score, infinite_loop
-    #file_list = glob.glob(file+'*')
-    file_list = os.listdir(file)
+    file_list = glob.glob(file+'*')
     if (Cluster_out+"_geneID_S"+str(threshold_score)+"_"+str(inflation_factor) or Cluster_out+"_KO_ID_S"+str(threshold_score)+"_"+str(inflation_factor)) in file_list:
         print("Please, set other name of output.")
         sys.exit(2)
