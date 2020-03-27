@@ -1,0 +1,21 @@
+
+Done
+chicken_human
+chicken_fruitfly
+
+
+Not Done
+chicken.faa pufferfish.faa chimpanzee.faa
+
+chicken.faa seasquirt.faa elegans.faa  zebrafish.faa
+
+
+
+
+###### Done in Server ####
+1. ALL Small
+2.chicken.faa dog.faa fruitfly.faa human.faa 
+3.
+
+
+

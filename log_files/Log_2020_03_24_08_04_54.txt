@@ -1,0 +1,10 @@
+			This Log File is Created on	2020-03-24 08:04:54.933730
+mode :
+genomes : A 
+cpu_count : 2
+blastp matrix : BLOSUM62
+Species : ./species/
+Blastp : blastp
+Score file : ./score_file/
+Blastp_data : ./blastp_data/
+save rawblastp score : False
