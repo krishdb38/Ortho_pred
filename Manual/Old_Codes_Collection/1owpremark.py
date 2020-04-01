@@ -189,7 +189,7 @@ def Get_Same_Species_Forward_Best_Hit(blastp_score):
                     temp_best_score = k
                 elif int(k[3]) == int(temp_best_score[3]):
                     second_temp_best_score.append(k) 
-#    print "############ temp best score ############", temp_best_score
+  #print "############ temp best score ############", temp_best_score
     second_best_score.append(temp_best_score)
     for j in second_temp_best_score:
         if j[2] == temp_best_score[2] and j[3] == temp_best_score[3]:
@@ -213,7 +213,7 @@ def GetForwardBestHit(blastp_score):
         blastp_score_split_list.append(blastp_score_element)
    
     for k in blastp_score_split_list: # ex) k is ['gi|15605613|ref|NP_212986.1|', 'gi|15605613|ref|NP_212986.1|', '3702', '699']
-#        print ">>>>>>>>>>>>>>>GetForwardBestHit   k", k
+ #        print ">>>>>>>>>>>>>>>GetForwardBestHit   k", k
         if int(k[2]) > int(temp_best_score[2]) : #Compare score
             temp_best_score = k
         elif int(k[2]) == int(temp_best_score[2]):
@@ -221,7 +221,7 @@ def GetForwardBestHit(blastp_score):
                 temp_best_score = k
             elif int(k[3]) == int(temp_best_score[3]):
                 second_temp_best_score.append(k) 
-#    print "############ temp best score ############", temp_best_score
+ #    print "############ temp best score ############", temp_best_score
     best_score.append(temp_best_score)
     for j in second_temp_best_score:
         if j[2] == temp_best_score[2] and j[3] == temp_best_score[3]:
@@ -349,19 +349,18 @@ def Oneway_Threshold_Best_Hit(mode):
                     if not i == k :                         
                         backward_best_hit_work_list.append((i,k, queryV_len))
     elif "2" in mode:
-        for i in user_selected_number: #Select species to write query    
+        for i in user_selected_number: #Select species to write query
             queryV = GetQuerySequence(selected_species_dic[i])
-            for k in user_selected_number: #Select of subject                               
+            for k in user_selected_number: #Select of subject
                 if Blastp_data+selected_species_dic[i]+"_"+selected_species_dic[k]+"_oneway_threshold_best_hit_S"+str(threshold_score) in precalculated_data_list :
                     used_precalculated_data_list.append(selected_species_dic[i]+"_"+selected_species_dic[k])
                     continue
-                else :                              
+                else :
                     if k < i: # gene ====> query 1->1 1->2 1->3 2->2 2->3  
                         continue
-                    
                     else :
                         print "Doing the blastp & forward best hit searches between %s genome and %s genome" % (selected_species_dic[i], selected_species_dic[k])
-                        
+
                         queryV_len = len(queryV)
                         if cpu_count == 1 :
                             blastp_time_start = time.time()
@@ -376,7 +375,7 @@ def Oneway_Threshold_Best_Hit(mode):
                                     process = multiprocessing.Process(target=RunParallelQuery, args=(i, k, parallel_query[m], m+1))
                                     # args( i => species of query , k => species of subject, m+1 => cpu_count ex) 1, 2 ...)
                                     process_list.append(process)
-                                    process.start()              
+                                    process.start()
                                 for n in process_list:
                                     n.join()
                                 blastp_time_end = time.time()
@@ -387,16 +386,16 @@ def Oneway_Threshold_Best_Hit(mode):
                                 parallel_query = DivisionParallelQuery(queryV, query_division_value, cpu_count, queryV_len)
                                 for m in range(cpu_count):
                                     process = multiprocessing.Process(target=RunParallelQuery, args=(i, k, parallel_query[m], m+1))
-                                    # args( i => species of query , k => species of subject, m+1 => cpu_count ex) 1, 2 ...)
+                                    #args( i => species of query , k => species of subject, m+1 => cpu_count ex) 1, 2 ...)
                                     process_list.append(process)
-                                    process.start()              
+                                    process.start()
                                 for n in process_list:
                                     n.join()
                                 blastp_time_end = time.time()
                                 print "The blastp & forward best hit searches took %.2f minutes" % ((blastp_time_end-blastp_time_start)/60)
                         new_calculated_data_list.append(selected_species_dic[i]+"_"+selected_species_dic[k])
-                        if not i == k :                               
-                            backward_best_hit_work_list.append((i,k, queryV_len))                                                          
+                        if not i == k :
+                            backward_best_hit_work_list.append((i,k, queryV_len))
     return backward_best_hit_work_list
  
 def Backward_Best_Hit(args):
@@ -453,9 +452,9 @@ def Backward_Best_Hit(args):
         for element in matching_list:
             if int(element[2]) > int(backward_best_score[2]):
                 backward_best_score = element
-#        with open('./'+selected_species_dic[species_of_query]+"_"+selected_species_dic[species_of_subject]+'_subtraction'+"_"+str(threshold_score), 'a') as subtraction :
-#            save_data = int(backward_best_score[2]) - int(forward_best_hit_score_element[2])
-#            subtraction.write(str(save_data)+"\n")
+ #        with open('./'+selected_species_dic[species_of_query]+"_"+selected_species_dic[species_of_subject]+'_subtraction'+"_"+str(threshold_score), 'a') as subtraction :
+ #            save_data = int(backward_best_score[2]) - int(forward_best_hit_score_element[2])
+ #            subtraction.write(str(save_data)+"\n")
                                                                                                                        
         if int(backward_best_score[2]) - int(forward_best_hit_score_element[2]) <= threshold_score :           
             with open(Score_file+selected_species_dic[species_of_query]+"_"+selected_species_dic[species_of_subject]+"_oneway_threshold_best_hit_S"+str(threshold_score), "a") as other_oneway_threshold_best_hit:
@@ -478,7 +477,7 @@ def Search_Equal_BBH_Data(target_A):
         copy_put_data.insert(0, target_A)
         results.put(copy_put_data)        
         equal_BBH_data_dic[target_A][1] = 0
-#        print "---put zero in Search_Equal_BBH_Data----- ", equal_BBH_data_dic[target_A]
+ #        print "---put zero in Search_Equal_BBH_Data----- ", equal_BBH_data_dic[target_A]
         for i in second_equal_BBH_data:
             if i[2] == 0:
                 pass
@@ -487,7 +486,7 @@ def Search_Equal_BBH_Data(target_A):
                     copy_second_put_data = copy.copy(i)
                     tasks.put(copy_second_put_data)  # Don't put results as queue. Because the tasks will put copy_second_put_data to results as queue.
                     i[2] = 0
-#                    print "---put zero in second_equal_BBH_data---", i
+ #                    print "---put zero in second_equal_BBH_data---", i
     return
 
 def Search_Unequal_BBH_Data(target_B):
@@ -521,7 +520,7 @@ def Matching_BBH(target):
         else:
             if copy_target[0]==j[0] or copy_target[0]==j[1] or copy_target[1]==j[0] or copy_target[1]==j[1]:
                 copy_j = copy.copy(j)
-#                print "targ_get , j = %s %s" % (copy_target, j)
+ #                print "targ_get , j = %s %s" % (copy_target, j)
                 unequal_BBH_data[unequal_BBH_data.index(j)][2] = 0
                 tasks.put(copy_j)
        
@@ -531,7 +530,7 @@ def Matching_BBH(target):
         Search_Equal_BBH_Data(get_task[1])
         results.put(get_task)
         Search_Unequal_BBH_Data(get_task)
-                 
+
 def Generating_Matrix_Clustering_Ortholog(element_set, bar):  
     """ Generate the matrix of clustering ortholog. """
     row_data = []
@@ -718,7 +717,6 @@ def Check_File(file):
         print "Please, set other name of output."
         sys.exit(2)
         
-            
 def Read_Equal_BBH(path):            
     with open(path+"_oneway_threshold_best_hit_S"+str(threshold_score), 'r') as equal_RBH:                          
         for j in equal_RBH:                    
@@ -734,6 +732,7 @@ def Read_Equal_BBH(path):
                 second_equal_BBH_data.append(split_data)       
     except : 
         pass
+
 def Read_Unequal_BBH(path):
     with open(path+"_oneway_threshold_best_hit_S"+str(threshold_score), 'r') as unequal_RBH:
         for j in unequal_RBH:
@@ -741,9 +740,6 @@ def Read_Unequal_BBH(path):
             split_data[2] = int(split_data[2])        
             unequal_BBH_data.append(split_data)
         
-
-
-
 print "Blastp = ", command_options.Blastp
 print "Blastp_data = ", command_options.Blastp_data
 print "blstp_matrix = ", command_options.blastp_matrix
@@ -820,14 +816,16 @@ infinite_loop = command_options.infinite_loop
 if "3" in mode :
     Check_File(Cluster_out)
     
-Del_File(Score_file, "*")
+#Del_File(Score_file, "*")
    
 if "3" in mode :
     Log_file_name = Cluster_out+"_S"+str(threshold_score)+"_"+str(inflation_factor)+".log"
 elif not "3" in mode :
+    "if onl;y mode 1 or 2 Passed"
     Log_file_name = 'Log'   
 
 with open(Log_file_name, 'w') as log:
+    
         log.write(str(datetime.datetime.now()))
         log.write("\nmode :")
         for i in mode :            
@@ -902,6 +900,7 @@ if "3" in mode :
                 if k < i :
                     pass
                 elif i == k :
+                    
                     Read_Equal_BBH(Score_file+selected_species_dic[i]+"_"+selected_species_dic[k])
                 elif i != k :                              
                     Read_Unequal_BBH(Score_file+selected_species_dic[i]+"_"+selected_species_dic[k])
