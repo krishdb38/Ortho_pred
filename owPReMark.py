@@ -1,19 +1,19 @@
 #!/usr/bin/python3
 import sys
 import os                  # For system operation
-import glob                #list the file unix system
-import subprocess          #to run blastp from OS
+import glob                # list the file unix system
+import subprocess          # to run blastp from OS
 import time                # to display time
-from alive_progress import alive_bar #For Progress Bar
-import multiprocessing  #For Parallel Processing
+from alive_progress import alive_bar  # For Progress Bar
+import multiprocessing  # For Parallel Processing
 import queue            # For Multiprocessing
-import numpy.matlib     # Matrix operation 
+import numpy.matlib     # Matrix operation
 import numpy as np      # For Mathmatical (Algebra) Operation
 import copy             # To copy file
-import operator   #to concate the list we will remove this later 
+import operator         # to concate the list we will remove this later
 import argparse
-import datetime         #to display current time & calculate difference
-from Bio import SeqIO  # For Bio Python Sequence Object
+import datetime         # to display current time & calculate difference
+from itertools import repeat
 
 __author__ = " SS Kim & Adhikari Krish"
 __teammates__ = [" pk", "okg"]
@@ -39,8 +39,9 @@ print("||\tStatus     :%s \t\t\t\t\t||" % __status__)
 print("="*82)
 
 
-parser = argparse.ArgumentParser(description='This program help you to detect ortholog between the protein sequences from different genomes\
-     and to cluster orthologs to ortholog groups.',
+parser = argparse.ArgumentParser(description="""
+This program help you to detect ortholog between the protein sequences
+from different genomes and cluster the orthologs to ortholog groups.""",
                                  add_help=True, prefix_chars='-+')
 essential_group = parser.add_argument_group('Essential arguments')
 blastp_group = parser.add_argument_group('blastp optional arguments')
@@ -50,7 +51,11 @@ essential_group.add_argument('-M', '--mode',
                              nargs='+',
                              dest='mode',
                              choices=['1', '2', '3'],
-                             help="1 : BLASTP. 2 : BLASTP using precalculated data. 3 : clustering. ex) 1 or 2 or 1 3 or 2 3")
+                             help="""
+                                1 : BLASTP
+                                2 : BLASTP using precalculated data.
+                                3 : clustering. ex) 1 or 2 or 1 3 or 2 3
+                                """)
 essential_group.add_argument('-g', '--genomes',
                              nargs='+',
                              dest='genomes',
@@ -60,36 +65,49 @@ parser.add_argument('-c', '--cpu',
                     default='1',
                     dest='cpu_count',
                     type=int,
-                    help='Set the number of CPU to use in program. The default is "1". This system has '+str(multiprocessing.cpu_count())+" CPUs")
+                    help='Set the number of CPU to use in program.\
+                        The default is "1".\
+                        This system has '
+                    + str(multiprocessing.cpu_count()) + " CPUs")
 blastp_group.add_argument('+r',
                           action='store_true',
-                          default=True, #Default was false
+                          default=True,  # Default was false
                           dest='save_raw_blastp_score',
-                          help='Save the raw score of blastp to the score_file dirctory.')
+                          help='Save the raw score of blastp to\
+                            the score_file dirctory.')
 blastp_group.add_argument('-t', '--threshold',
                           action='store',
                           default=5,
                           type=int,
                           dest='threshold_score',
-                          help='Set the threshold score. The threshold score is an allowable range to be an ortholog.' +
-                          'If the score difference between backward best hit score and forward best hit score is less than threshold score, it is considered the forward best hit pair to be the ortholog.' +
-                          'That is  called the "one-way threshold best hit" by us. The default value is "5". "backward best hit score - forward best hit score <= threshold score"')
+                          help="""Set the threshold score.
+                          Threshold score is an allowable range for ortholog
+                          If the score difference between backward best hit score and
+                          forward best hit score is less than threshold score,
+                          it is considered the forward best hit pair to be the ortholog.'
+                          'That is  called the "one-way threshold best hit" by us.
+                          The default value is "5".
+                          "backward best hit score - forward best hit score <= threshold score""")
 blastp_group.add_argument('-m', '--matrix',
                           action='store',
                           default='BLOSUM62',
                           dest='blastp_matrix',
-                          choices=['BLOSUM45', 'BLOSUM62', 'BLOSUM82'],
-                          help='select the matrix to use in blastp. The default value is "BLOSUM62".')
+                          # 82 is not availiable
+                          choices=['BLOSUM45', 'BLOSUM62', 'BLOSUM80'],
+                          help='select the matrix to use in blastp.\
+                              The default value is "BLOSUM62".')
 blastp_group.add_argument('-s', '--species',
                           action='store',
                           default='./species/',
                           dest='Species',
-                          help='set the path of species directory. The default is  "./species/".')
+                          help='set the path of species directory.\
+                              The default is  "./species/".')
 blastp_group.add_argument('-b', '--blastp',
                           action='store',
-                          default="blastp",  # For Windows
+                          default="blastp",  # blastp must be in your system path
                           dest='Blastp',
-                          help='set the path of blastp file to run the blastp program. The default is "blastp".')
+                          help='set the path of blastp file to run the blastp program.\
+                              The default is "blastp".')
 blastp_group.add_argument('-F', '--scorefile',
                           action='store',
                           default='./score_file/',
@@ -99,7 +117,8 @@ blastp_group.add_argument('-B', '--blastp_data',
                           action='store',
                           default='./blastp_data/',
                           dest='Blastp_data',
-                          help='set the path of precalculated blastp data. The default path is "./blastp_data/".')
+                          help='set the path of precalculated blastp data.\
+                              The default path is "./blastp_data/".')
 mcl_group.add_argument('-i', '--IF',
                        action='store',
                        default=1.4,
@@ -111,17 +130,21 @@ mcl_group.add_argument('-l', '--loop',
                              default=60,
                              type=int,
                              dest='infinite_loop',
-                             help='prevent the infinite loop of mcl algorithm. The default value is "60".')
+                             help='prevent the infinite loop of mcl algorithm.\
+                                 The default value is "60".')
 mcl_group.add_argument('-o', '--out',
                              action='store',
                              default='./cluster_out',
                              dest='Cluster_out',
-                       help='set the path and name of ortholog cluster file, log and error_warning file. The default path and name is "./cluster_out".')
+                       help=""""
+                       set the path and name of ortholog cluster file,
+                       log and error_warning file.
+                       The default path and name is "./cluster_out""")
 mcl_group.add_argument('+v',
                        action='store_true',
                        default=False,
                        dest='verbose',
-                       help='verbosely show  information of a big matrix computaion.')
+                       help='verbosely show information of a big matrix computaion.')
 parser.add_argument('--version',
                     action='version',
                     version='%(prog)s Ver. 11.1')
@@ -130,10 +153,14 @@ command_options = parser.parse_args()
 
 def matrix_name():
     """This Function will Return the Matrix name choosed by User.
-    BLOSUM45 ,  BLOSUM62 , BLOSUM82 """
+    BLOSUM45 ,  BLOSUM62 , BLOSUM80 """
     print("BLOcks SUbstitution Matrix (BLOSUM) is a Substitution matrix used for sequence alignment of Proteins")
-    print("""\n1. BLOSUM45 :-For more distantly related Proteins alignment DataBase\n2. BLOSUM62 :- MidRange Seq with more than 62%similarity\
-         \n3. BLOSUM82 :- More related Proteins\nOther Keys will exit the Program""")
+    print("""
+    1. BLOSUM45 :-For more distantly related Proteins alignment DataBase
+    2. BLOSUM62 :- MidRange Seq with more than 62%similarity
+    3. BLOSUM80 :- More related Proteins\n
+    Other Keys will exit the Program
+    """)
     metrix_num = input("\nEnter a matrix number: ")
     if metrix_num not in ("1", "2", '3'):
         print("Wrong input *%s*Sorry not in list\n" %
@@ -142,80 +169,69 @@ def matrix_name():
     if metrix_num == "1":
         return "BLOSUM45"
     if metrix_num == "2":
-        return "BLOSUM62"  # 62 is not availiable currently
+        return "BLOSUM62"
     if metrix_num == "3":
-        return "BLOSUM82"
+        return "BLOSUM80"
 
 
 def query_sequence(genome):
-    """This Function Read Fastaq Files and return as a list Format with gene Position as a index
-    This Function create a list of Seprate Query Sequence"""
-    # This Function is created by using Bio Python we will test later
+    """
+    This Function Read Fastaq Files and return as a list Format with gene Position as a index
+    This Function create a list of Seprate Query Sequence
+    # !! This Function can also be calculated busing Bio Python but some error rise !!
+    """
     gene_seq = ""
-    gene_seq_list = []
+    gene_seq_list = []  # container to  store gene id with seq
     try:
         with open(Species+genome) as gene:
             for each_line in gene:
-                if ">" in each_line:
-                    if gene_seq != "":
-                        gene_seq_list.append(gene_seq)
-                        gene_seq = ""
+                if ">" in each_line and gene_seq != "":
+                    gene_seq_list.append(gene_seq)
+                    gene_seq = ""
                 gene_seq = gene_seq+each_line
             gene_seq_list.append(gene_seq)
-            #print("query_sequence() Run Successfully")
             return gene_seq_list
-
     except IOError as err:
         print("IOError occurred in query_sequence function : " + str(err))
 
 
-def query_sequence_(genome):
-    """This Function Read Fasta (Genome) file and return as a list Format with gene Position and Sequence Developed by Krish"""
-    global Species
-    try:
-        return [str((seq_record.id+"\n"+seq_record.seq)) for seq_record in SeqIO.parse(Species+genome, "fasta")]
-        # To understand this Function Bio Python library needs to be studied
-    except IOError as err:
-        print(str(err))
-
-
 def write_query(query, parallel_num):
-    "This Function Write Query with file Name query+ parallel_num in same directory and raise IO error if Error rises"
+    "This Function Write Query with file Name query+ parallel_num in same directory\
+        and raise IO error (Folder?Files not Found) if Error occured"
     # print("write_query(query,parallel_num)")
     try:
         with open("./query/query_"+str(parallel_num), "w") as write_query:
             write_query.write(query)
     except IOError as err:
-        print("IOError occurred in write_query function : " + str(err))
+        print(
+            "IOError occurred in write_query function Folder or File Not found: " + str(err))
 
 
 def run_blast(subject, parallel_num):
-    """By this Function it will create a Pipe line to run Blastp in Computer by input Parameter Subject is whole Genome
-         and parallel_number is query file Created by early step.to run a big file it is time Consuming. So reduce a File size and run
-         The Output Format 10 --> Comma Separated Values 
-         qseqid --> Query Seq ID
-         ssequid --> Subject of Seq. id ID
-         Score -->Raw Score
-         length-->Alignment length"""
+    """
+    By this Function it will create a Pipe line to run Blastp in Computer by input Parameter.
+    Subject is whole Genome and parallel_number is query file Created by early step.
+    Running a big file is time Consuming.The parameters passed in blastp are
+    The Output Format 10 --> Comma Separated Values
+        >> qseqid --> Query Seq ID
+        >> ssequid --> Subject of Seq. id ID
+        >> Score -->Raw Score
+        >> length-->Alignment length
+    # query subject is inside query Folder
+    # run_blastp =subprocess.Popen(cmd,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    # run_blastp = subprocess.run(cmd,shell=True ,capture_output = True,text = True)
+    # output Format 10 qseqid query (e.g. gene sequence id , sseqid subject (e.g. reference genome) genome id)"""
 
     subject = Species+subject  # later remove this
     cmd = ["blastp", "-query", "./query/query_"+str(parallel_num), "-subject", subject,
            "-matrix", blastp_matrix, "-outfmt", "10 qseqid sseqid score length"]
 
-    # query subject is inside query Folder
-    #run_blastp =subprocess.Popen(cmd,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    #run_blastp = subprocess.run(cmd,shell=True ,capture_output = True,text = True)
-    # output Format 10 qseqid query (e.g. gene sequence id  ,  sseqid subject (e.g. reference genome) genome id)
-    run_blastp = subprocess.Popen(
-        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    #run_blastp_stream = run_blastp.stdout()
-    run_blastp_stream = run_blastp.communicate()
-    run_blastp_output_stream = run_blastp_stream[0]
-    #run_blastp_error_stream = run_blastp_stream[1]
-
-    # Later We can return by this
-    # return run_blastp.communicate[0]
-    return run_blastp_output_stream
+    try:
+        run_blastp = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return run_blastp.communicate()[0]
+    except:
+        print("Error in BlastP")
 
 
 def same_species_forward_best_hit(blastp_score):
@@ -223,7 +239,7 @@ def same_species_forward_best_hit(blastp_score):
     Because there are an duplicated genes in a same genome.
     blstp_score file is return value of run_blast() Function
     When the blastp score compare with blastp score of duplicate gene, if score and length are same, blasp score of duplicated gene is added to a second best score."""
-    #print(blastp_score)
+    # print(blastp_score)
     blastp_score_split_list = []
     temp_best_score = ['-1', '-1', '-1']
     second_temp_best_score = []
@@ -237,7 +253,7 @@ def same_species_forward_best_hit(blastp_score):
         blastp_score_split_list.append(blastp_score_element)
     # ex) k is ['gi|15605613|ref|NP_212986.1|', 'gi|15605613|ref|NP_212986.1|', '3702', '699']
     for k in blastp_score_split_list:
-        if k[0] == k[1]:  # if the Position (gene) is Same
+        if k[0] == k[1]:    # if the Position (gene) is Same
             best_score.append(k)
         elif k[0] != k[1]:
             if int(k[2]) > int(temp_best_score[2]):  # Compare score
@@ -247,22 +263,22 @@ def same_species_forward_best_hit(blastp_score):
                     temp_best_score = k
                 elif int(k[3]) == int(temp_best_score[3]):
                     second_temp_best_score.append(k)
- #    print ("############ temp best score ############", temp_best_score)
+    #   print ("############ temp best score ############", temp_best_score)
     second_best_score.append(temp_best_score)
     for j in second_temp_best_score:
         if j[2] == temp_best_score[2] and j[3] == temp_best_score[3]:
             second_best_score.append(j)
     for m in second_best_score:
         if (best_score[0][2] == m[2] and int(best_score[0][3]) <= int(m[3])) or int(best_score[0][2]) < int(m[2]):
-             # '104' < '23' is True because of string. So the int function is used.
+            # '104' < '23' is True because of string. So the int function is used.
             best_score.append(m)
-    #print("best Score is", best_score)
+    #  print("best Score is", best_score)
     return best_score
 
 
 def forward_best_hit(blastp_score):
     """Search the forward best hit among the blastp scores of same species."""
-    #print("Rnunning GetForward BestHit")
+    #  print("Rnunning GetForward BestHit")
     blastp_score_split_list = []
     temp_best_score = ['-1', '-1', '-1']
     second_temp_best_score = []
@@ -273,7 +289,6 @@ def forward_best_hit(blastp_score):
     for i in blastp_score_split:
         blastp_score_element = i.split(',')
         blastp_score_split_list.append(blastp_score_element)
-
     for k in blastp_score_split_list:
         # ex) k is ['gi|15605613|ref|NP_212986.1|', 'gi|15605613|ref|NP_212986.1|', '3702', '699']
         # print ">>>>>>>>>>>>>>>forward_best_hit   k", k
@@ -284,7 +299,6 @@ def forward_best_hit(blastp_score):
                 temp_best_score = k
             elif int(k[3]) == int(temp_best_score[3]):
                 second_temp_best_score.append(k)
-  #print "############ temp best score ############", temp_best_score
     best_score.append(temp_best_score)
     for j in second_temp_best_score:
         if j[2] == temp_best_score[2] and j[3] == temp_best_score[3]:
@@ -327,20 +341,18 @@ def division_parallel_query(query_v, query_division_value, cpu_count, query_v_le
 
 
 def run_parallel_query(species_of_query, species_of_subject, query_v, parallel_num):
-    """ run_parallel_query(i ,k , query_v , cpu_count) i and k are user selected number in a list Format
+    """
+    run_parallel_query(i ,k , query_v , cpu_count) i and k are user selected number in a list Format
     Run the following functions. write_query, run_blast, same_species_forward_best_hit, forward_best_hit
-    Save the files which are oneway_threshold_best_hit, second_oneway_threshold_best_hit, 
-    blastp_score_split_list and raw_blastp_score (optional) by each species. 
-    parallel_num is the Number of CPU selected by the user if CPu 1 selected then 1 """
-
-    #print("run_parallel_query Running")
+    Save the files which are oneway_threshold_best_hit, second_oneway_threshold_best_hit,
+    blastp_score_split_list and raw_blastp_score (optional) by each species.
+    parallel_num is the Number of CPU selected by the user if CPu 1 selected then 1
+    """
+    #  print("run_parallel_query Running")
     global selected_number, selected_species_dic
-    # bar = Bar('Processing '+str(parallel_num), max = len(query_v)) #progressing bar setting , Creating a Object
-    # bar is not Supported in Python 3    We use alive_bar instead
     with alive_bar(len(query_v)) as bar:  # declare your set of items for loop
         for j in query_v:
-            # bar.next() #progressing bar not supported
-            bar()# Call after Consuming One Item
+            bar()  # Call after Consuming One Item
             write_query(j, parallel_num)  # if 1 Added Here Add also to Run
         # This Function Only Write a file with j name and parallel_num i.e CPU Count
             blastp_score = run_blast(
@@ -360,9 +372,9 @@ def run_parallel_query(species_of_query, species_of_subject, query_v, parallel_n
                                       selected_species_dic[species_of_subject]
                                       + "_oneway_threshold_best_hit_Score"
                                       + str(threshold_score), "a") as oneway_threshold_best_hit:
-                                save_best_score = selected_species_dic[species_of_query]+"_"+best_score_element[0].split("\s")[0]\
-                                    + " "+selected_species_dic[species_of_subject]+"_"+best_score_element[1].split(
-                                        "\s")[0]+" "+best_score_element[2]+"\n"
+                                save_best_score = selected_species_dic[species_of_query] + "_" + best_score_element[0]\
+                                    .split("\s")[0] + " " + selected_species_dic[species_of_subject] + "_"+best_score_element[1]\
+                                    .split("\s")[0]+" " + best_score_element[2]+"\n"
                                 # best_score_element[0].split("|") ==> ['gi', '15642790', 'ref', 'NP_227831.1', '']
                                 oneway_threshold_best_hit.write(
                                     save_best_score)
@@ -379,7 +391,7 @@ def run_parallel_query(species_of_query, species_of_subject, query_v, parallel_n
                                     second_save_best_score)
                 else:  # If species_of_query not equal with species_of_subject, run reversing run_blast
                     for best_score_element in best_score:
-                        if not '-1' in best_score_element:
+                        if '-1' not in best_score_element:   # ! if not "-1" in best_score_element:
                             with open(Score_file+selected_species_dic[species_of_query]
                                       + "_" +
                                       selected_species_dic[species_of_subject] +
@@ -410,21 +422,22 @@ def run_parallel_query(species_of_query, species_of_subject, query_v, parallel_n
                 with open(Score_file+selected_species_dic[species_of_query]
                           + "_"+selected_species_dic[species_of_subject]+"_S"
                           + str(threshold_score)+"_"+str(parallel_num), "a") as save_blastp:
-                    save_blastp.write(blastp_score.decode()) # Only string is format is supported
+                    # Only string is format is supported
+                    save_blastp.write(blastp_score.decode())
     # bar.finish() # progressing bar finish
     return  # None
 
 
 def oneway_threshold_best_hit(mode):
     """ This Function accept the mode and Run program and return backward_best_hit_work_list mode 1 and 2 is supported """
-    #print("oneway_threshold_best_hit running")
-    global user_selected_number, cpu_count,precalculated_data_list,new_calculated_data_list
+    # print("oneway_threshold_best_hit running")
+    global user_selected_number, cpu_count, precalculated_data_list, new_calculated_data_list
     b_info = "Running the blastp & forward best hit searches "
     process_list = []
     backward_best_hit_work_list = []
     if "1" in mode:
         """We have 3 Mode 1 is for blastp, Mode 2 is for BLASTP using precalcualted data and Mode 3 is for clustering"""
-        for i in user_selected_number:  # Select species to write query 
+        for i in user_selected_number:  # Select species to write query
             query_v = query_sequence(selected_species_dic[i])
             # query_v is a list Format  with a position gene id , Seq
             # User Selected  [1, 3, 5] is list of User input
@@ -438,17 +451,17 @@ def oneway_threshold_best_hit(mode):
                     # length of Genome gene ID in Sequence File
                     query_v_len = len(query_v)
                     if cpu_count == 1:
-                        #"No Parallel Computing while cpu count == 1"
+                        # "No Parallel Computing while cpu count == 1"
                         blastp_time_start = time.time()
                         run_parallel_query(i, k, query_v, cpu_count)
-                        #"i is first species k is second species number queryv is list file of i Position genome"
+                        # "i is first species k is second species number queryv is list file of i Position genome"
                         blastp_time_end = time.time()
-                        print(b_info+ "took %.2f minutes" % (
+                        print(b_info + "took %.2f minutes" % (
                             (blastp_time_end-blastp_time_start)/60))
                     else:
                         # If the number of query_v_len is less than cpu_count, Remark will select the number of query_v_len.
                         if query_v_len < cpu_count:
-                            #"because the cpu_count will seprate list items from query_v file.In general this will not happened because length of query is always long"
+                            # "because the cpu_count will seprate list items from query_v file.In general this will not happened because length of query is always long"
                             blastp_time_start = time.time()
                             # 1 is query_division_value. Because query_v_len / query_v_len(=cpu_count) is 1.
                             parallel_query = division_parallel_query(
@@ -465,7 +478,7 @@ def oneway_threshold_best_hit(mode):
                             print(b_info+"took %.2f minutes " % (
                                 (blastp_time_end-blastp_time_start)/60))
                         else:
-                            #"this wiil run if cpu_count is more than 1"
+                            # "this wiil run if cpu_count is more than 1"
                             blastp_time_start = time.time()
                             query_division_value = query_v_len / cpu_count
                             parallel_query = division_parallel_query(
@@ -485,36 +498,37 @@ def oneway_threshold_best_hit(mode):
                     backward_best_hit_work_list.append((i, k, query_v_len))
                     print("Backward")
     elif "2" in mode:
-        
+
         """If blast Files exist then this will pass the blast time other wise blast will run.
         This will reduce the time for blast and increase the speed of the system.
         """
         print("\nMode 2, Running from precalculated data sets which will save the Time")
-        print(len(precalculated_data_list),"oneway_threshold_best_hit_ files are located") # !!! Delete This row later
+        # print(len(precalculated_data_list),"oneway_threshold_best_hit_ files are located") # !!! Delete This row later
         for i in user_selected_number:  # Select species to write query
             query_v = query_sequence(selected_species_dic[i])
             for k in user_selected_number:  # Select of subject
                 if Blastp_data+selected_species_dic[i]+"_"+selected_species_dic[k]\
                     + "_oneway_threshold_best_hit_Score"\
-                        + str(threshold_score) in precalculated_data_list: 
+                        + str(threshold_score) in precalculated_data_list:
                     print("Skipped")
-                    used_precalculated_data_list.append(selected_species_dic[i]+"_"+selected_species_dic[k])
-                    #used_precalcualted _data_list is created before calling this function
-                    #if files exist then passed
-                    continue #File will skkipped
+                    used_precalculated_data_list.append(
+                        selected_species_dic[i]+"_"+selected_species_dic[k])
+                    # used_precalcualted _data_list is created before calling this function
+                    # if files exist then passed
+                    continue  # File will skkipped
                 else:
                     if k < i:  # gene ====> query 1->1 1->2 1->3 2->2 2->3
                         continue
                     else:
                         "same as Mode 1, if Precalculated file doesnot exist"
-                        print(b_info+ " between %s genome and %s genome" % (
-                            selected_species_dic[i], selected_species_dic[k]))
+                        # print(b_info+ " between %s genome and %s genome" % (
+                        #    selected_species_dic[i], selected_species_dic[k]))
                         query_v_len = len(query_v)
                         if cpu_count == 1:
                             blastp_time_start = time.time()
                             run_parallel_query(i, k, query_v, cpu_count)
                             blastp_time_end = time.time()
-                            print(b_info+ "took %.2f minutes" % (
+                            print(b_info + "took %.2f minutes" % (
                                 (blastp_time_end-blastp_time_start)/60))
                         else:
                             # If the number of query_v_len is less than cpu_count, Remark will select the number of query_v_len.
@@ -550,7 +564,7 @@ def oneway_threshold_best_hit(mode):
                                 for n in process_list:
                                     n.join()
                                 blastp_time_end = time.time()
-                                print(b_info+ " took %.2f minutes" % (
+                                print(b_info + " took %.2f minutes" % (
                                     (blastp_time_end-blastp_time_start)/60))
                         new_calculated_data_list.append(
                             selected_species_dic[i]+"_"+selected_species_dic[k])
@@ -562,13 +576,12 @@ def oneway_threshold_best_hit(mode):
 
 def backward_best_hit(args):
     bck_info = "Running the backward_best_hit"
-    test =" "
-    print(bck_info)
+    # print(bck_info)
     species_of_query, species_of_subject, query_v_len = args
     start_time_bbh = time.time()
     forward_best_hit_score_list = []
     blastp_score_split_list = []
-    print(bck_info+ " between %s genome %s genome" % (
+    print(bck_info + " between %s genome %s genome" % (
         selected_species_dic[species_of_query], selected_species_dic[species_of_subject]))
     # If the number of query_v_len is less than cpu_count, the cpu_count is changed to query_v_len.
     if query_v_len < cpu_count:
@@ -643,28 +656,29 @@ def backward_best_hit(args):
     # bar.finish()
     finish_time_bbh = time.time()
     rbh_time = float((finish_time_bbh - start_time_bbh)/60)
-    print(bck_info+ " %s-%s took %.2f minutes" %
+    print(bck_info + " %s-%s took %.2f minutes" %
           (selected_species_dic[species_of_query], selected_species_dic[species_of_subject], rbh_time))
     return rbh_time
 
 
-def search_equal_bbh_data(target_A):
+def search_equal_bbh_data(target_a):
     """Search the equal backward best hit data. ex) AAE_AAE_backward_best_hit
     The if with pass statement will be later updated """
     # print("search_equal_bbh_data")
-    put_data = equal_BBH_data_dic[target_A]
+    put_data = equal_BBH_data_dic[target_a]
     if put_data[1] == 0:
+        # this can be done by  if put_data[1]!=0
         pass
     else:
         copy_put_data = copy.copy(put_data)
-        copy_put_data.insert(0, target_A)
+        copy_put_data.insert(0, target_a)
         results.put(copy_put_data)
-        equal_BBH_data_dic[target_A][1] = 0
+        equal_BBH_data_dic[target_a][1] = 0
         for i in second_equal_BBH_data:
             if i[2] == 0:
                 pass
             else:
-                if i[0] == target_A or i[1] == target_A:
+                if i[0] == target_a or i[1] == target_a:
                     copy_second_put_data = copy.copy(i)
                     # Don't put results as queue. Because the tasks will put copy_second_put_data to results as queue.
                     tasks.put(copy_second_put_data)
@@ -675,14 +689,14 @@ def search_unequal_bbh_data(target_b):
     """Search the unequal backward best hit data. ex) AAE_CAC_backward_best_hit
     No Return !! vlaues means Null return"""
     global unequal_BBH_data
-    print(unequal_BBH_data)
+    # print(unequal_BBH_data)
     for i in unequal_BBH_data:
         if i[2] == 0:
             " "
             pass
         else:
             if target_b[0] == i[0] or target_b[0] == i[1] or target_b[1] == i[0] or target_b[1] == i[1]:
-                #sample of B  - ["AAE_gi|156|ref....","CAC_gi|1560..",85]
+                # sample of B  - ["AAE_gi|156|ref....","CAC_gi|1560..",85]
                 copy_i = copy.copy(i)
                 tasks.put(copy_i)
                 unequal_BBH_data[unequal_BBH_data.index(i)][2] = 0
@@ -690,7 +704,7 @@ def search_unequal_bbh_data(target_b):
 
 def matching_bbh(target):
     """ Match the backward best hit """
-    #print("running matching_bbh")
+    # print("running matching_bbh")
     if target[2] == 0:
         return
 
@@ -722,8 +736,7 @@ def matching_bbh(target):
 def matrix_clustering_ortholog(element_set):
     # matrix_clustering_ortholog(element_set, bar): # this is Old Method old is generating is  removed
     """ Generate the matrix of clustering ortholog. """
-    print("matrix_clustering_ortholog Function is running element_set is Passed is ")
-    print(element_set)
+    # print(element_set) ## !!
     row_data = []
     col_data = []
     temp_results = queue.Queue()
@@ -756,7 +769,8 @@ def matrix_clustering_ortholog(element_set):
     # create a new matrix of given shape(the size_resuls) and type, filled with zeros.
     score_matrix = numpy.matlib.zeros(
         (len(row_data), len(col_data)), dtype=np.float)
-    # np.zeros() can be used, will test later,
+    # np.zeros() can be used, will test later,matlib function return matrix,np.matrix(np.zeros((len,width)))
+
     while not temp_results.empty():
         get_temp_results = temp_results.get()
         row = get_temp_results[0]
@@ -770,7 +784,7 @@ def matrix_clustering_ortholog(element_set):
         if len(row_data) > 1000 and cpu_count > 1:
             score_matrix = parallel_mcl(score_matrix)
         else:
-            score_matrix = mcl(score_matrix)     ## !!! Error 
+            score_matrix = mcl(score_matrix)  # !!! Error
         clustering(row_data, col_data, score_matrix)
 
 
@@ -813,13 +827,13 @@ def parallel_mcl(score_matrix):
             else:
                 score_matrix = np.concatenate(
                     (score_matrix, divide_results[i]), axis=0)
+        # numpy.concatenate(a1,a2...)sequence of array_like,if axis not passed then
 
         sum_results = 0
         for i in multiplication_results:
             sum_results += i
         # identify whether inflation_matrix is idempotent matrix or not.
         idempotent_matrix = abs(np.sum(score_matrix) - sum_results)
-
         count += 1
         if count > infinite_loop:  # It will prevent the infinite loop of mcl algorithm.
             break
@@ -835,17 +849,18 @@ def mcl(score_matrix):
     count = 0
     infinitesimal_value = 10**-10
     idempotent_matrix = numpy.matlib.ones((2, 2))
-    #"idempotent_matrix = np.ones((2,2)) # i will later test with this"
+    # "idempotent_matrix = np.ones((2,2)) # i will later test with this"
     while idempotent_matrix.sum() > infinitesimal_value:  # > infinitesimal_value
         mcl_time_start = time.time()
         expansion_matrix = score_matrix ** 2
-        
-        print("shape of input score_matrix",score_matrix.shape)
-        print("shape of expansion_matrix is ",expansion_matrix.shape )
-        print("Shape of inflation matrix is ",expansion_matrix.shape)
+        print("shape of input score_matrix", score_matrix.shape)
+        print(expansion_matrix)
 
-        score_matrix = np.power(expansion_matrix, inflation_factor)  ## !!! Eroor
+        score_matrix = np.power(expansion_matrix, float(
+            inflation_factor))  # !!! Eroor
+        print(score_matrix)
         score_matrix_sum = score_matrix.sum(axis=0)
+        print(score_matrix_sum)
         # create a inflation_matrix
         score_matrix = np.divide(score_matrix, score_matrix_sum)
         # identify whether inflation_matrix is idempotent matrix or not.
@@ -859,12 +874,14 @@ def mcl(score_matrix):
                   % ((mcl_time_finish - mcl_time_start)/60, count, score_matrix[0].size, score_matrix[0].size))
     return score_matrix
 
+
 def clustering(row_data, col_data, score_matrix):
     global cluster_count
     global ortholog_count
     ortholog_temp_list = []
     for i in range(len(row_data)):
         ortholog_list = []
+        ortholog_sum = 0
         ortholog = queue.Queue()  # It is Queue which is put the ortholog.
         # It is Queue which is put the ortholog having changed gene ID
         gene_id_queue = queue.Queue()
@@ -920,17 +937,21 @@ def clustering(row_data, col_data, score_matrix):
 def parallel_matrix_multiplication(data):
     "Doing parallel_matrix_multiplication Using Numpy"
     matrix_element, matrix = data
-    return  matrix_element * matrix
+    return matrix_element * matrix
 
 
 def parallel_matrix_power(matrix_element):
-    "This Function Compute Parallel_Matrix Power by using Numpy np.power() Function"
+    """This Function Compute Parallel_Matrix Power by using Numpy np.power() Function
+    this will do element wise operation, power of each  element given by input
+    """
     global inflation_factor
-    return np.power(matrix_element, inflation_factor)
+    return np.power(matrix_element, float(inflation_factor))
 
 
 def parallel_matrix_division(data):
-    "This Function Will Perform Matrix Division by Using Numpy library"
+    """This Function Will Perform Matrix Division by Using Numpy library
+    This Function is also do element wise operation on given matrix with sum data
+    """
     matrix_element, sum_data = data
     return np.divide(matrix_element, sum_data)
 
@@ -950,20 +971,13 @@ def read_species(pr=1):  # default 1 which will always shows the name of Species
 
 
 def del_file(path, file):
-    "This Function delete the file passed with path and file"
- #   "Delete the Unnecessary file according to path and file name passed"
- #  del_file =subprocess.Popen(["rm "+path+file], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
- #   del_file_stream = del_file.communicate()
- #   if not del_file_stream[1]:
- #       print ("Done to del "+path+file)
- #   elif del_file_stream[1]:
- #       print (del_file_stream[1])
+    "This Function delete the file passed with path and files or folders "
     try:
         os.remove(path+file)
         print("File Successfully Removed")
         "to remove all files inside the folder we need to use loop over the folder"
-    except:
-        print("Check the File or Path")
+    except IOError as err:
+        print("Check the File or Path", err)
 
 
 def check_file(file):
@@ -976,14 +990,15 @@ def check_file(file):
     """
     # Declare all variable as a globally Added
     global Cluster_out, threshold_score, infinite_loop
-    file_list = glob.glob(file+'*')  # list all related files in same directory local variable
+    # list all related files in same directory local variable
+    file_list = glob.glob(file+'*')
     if (Cluster_out+"_geneID_S"+str(threshold_score)
         + "_"+str(inflation_factor) or Cluster_out+"_KO_ID_S"
             + str(threshold_score)+"_"+str(inflation_factor)) in file_list:
-        print("Please, set other name of output.line Number 966")
+        print("Please, set other name,%s is of output.line Number 966")
         sys.exit(2)
     else:
-        print(file,"is ")
+        print(file, "is ")
 
 
 def read_equal_bbh(path):
@@ -998,7 +1013,7 @@ def read_equal_bbh(path):
             split_data = j.split()
             # Split Data sample
             # ['A_gi|15605613|ref|NP_212986.1|', 'C_gi|15004707|ref|NP_149167.1|', '51']
-            split_data[2] = int(split_data[2]) #Only Converting to int format
+            split_data[2] = int(split_data[2])  # Only Converting to int format
             equal_BBH_data.append(split_data)
             equal_BBH_data_dic[split_data[0]] = split_data[1:]
     try:
@@ -1006,11 +1021,11 @@ def read_equal_bbh(path):
                   + str(threshold_score), 'r') as second_equal_RBH:
             for j in second_equal_RBH:
                 split_data = j.split()
-                #"['AAE_gi|15606128|ref|NP_213505.1|', 'AAE_gi|15606877|ref|NP_214257.1|', 898] split_data sample"
+                # "['AAE_gi|15606128|ref|NP_213505.1|', 'AAE_gi|15606877|ref|NP_214257.1|', 898] split_data sample"
                 split_data[2] = int(split_data[2])
                 second_equal_BBH_data.append(split_data)
-    except:
-        pass
+    except IOError as err:
+        print(err)
 
 
 def read_unequal_bbh(path):
@@ -1024,6 +1039,7 @@ def read_unequal_bbh(path):
             split_data = j.split()
             split_data[2] = int(split_data[2])
             unequal_BBH_data.append(split_data)
+
 
 print("="*82)
 print("||\t****Default Variables(Values)****\t\t\t\t\t||")
@@ -1103,8 +1119,8 @@ elif sys.argv[1:]:
     inflation_factor = command_options.inflation_factor
     selected_species_dic, backward_selected_species_dic, number_i = read_species()
     user_selected_number = [backward_selected_species_dic[ele]
-                            for ele in genomes]   #select by value of dictionary 
-    Cluster_out = command_options.Cluster_out     # File Name to save 
+                            for ele in genomes]  # select by value of dictionary
+    Cluster_out = command_options.Cluster_out     # File Name to save
 
 Species = command_options.Species
 Blastp = command_options.Blastp
@@ -1114,95 +1130,97 @@ save_raw_blastp_score = command_options.save_raw_blastp_score
 threshold_score = command_options.threshold_score
 verbose = command_options.verbose
 infinite_loop = command_options.infinite_loop
-log_time =datetime.datetime.now().strftime("_%Y_%m_%d_%H_%M_%S")
+log_time = datetime.datetime.now().strftime("_%Y_%m_%d_%H_%M_%S")
 
-#print("This is for checking ")
-#print(command_options.Species ,command_options.Blastp ,command_options.Score_file)
-#  This is For test
+
+# print(command_options.Species ,command_options.Blastp ,command_options.Score_file)
+
 if "3" in mode:
     "Mode 3 is for clustering the matrix data."
     print("3 mode clustering is selected")
-    inflation_factor = input("Enter the inflation factor to cluster: ") #
+    inflation_factor = input("Enter the inflation factor to cluster: ")
     Cluster_out = input("Set the name of clustering output Folder : ")
     """Cluster_out is user input value --> the name of clustering output <--results
     """
-    check_file(Cluster_out) #if same file for user input species and cluester out and inflation same no need to run cluster again
+    check_file(Cluster_out)  # if same file for user input species and cluester out and inflation same no need to run cluster again
 
-#del_file(Score_file, "*") #this Function will delete all files inside currently folder
+# del_file(Score_file, "*") # this Function will delete all files inside currently folder
 
 if "3" in mode:
-    Log_file_name = "./cluster_out/"+Cluster_out+"_S" + str(threshold_score)+"_"+str(inflation_factor)+log_time+"_log.txt"
+    Log_file_name = "./cluster_out/" + Cluster_out + "_S" + \
+        str(threshold_score) + "_" + \
+        str(inflation_factor) + log_time+"_log.txt"
 
-elif not "3"  in mode:
-    Log_file_name ='log_files/Log' +log_time+"_log.txt"
+elif "3" not in mode:  # elif not "3" in mode:
+    Log_file_name = 'log_files/Log' + log_time+"_log.txt"
 
 with open(Log_file_name, 'w') as log:
-        log.write(str(datetime.datetime.now()))
-        log.write("\nmode :")
-        for i in mode :            
-            log.write(" "+i)
-        log.write("\ngenomes : ")
-        for i in user_selected_number :
-            log.write(selected_species_dic[i]+" ")    
-        log.write("\ncpu_count : "+str(cpu_count))
-        log.write("\nblastp matrix : "+blastp_matrix)
-        if "3" in mode :
-            log.write("\ninflation_factor : "+str(inflation_factor))
-            log.write("\nCluster out : "+Cluster_out)
-        log.write("\nSpecies : "+Species)
-        log.write("\nBlastp : "+Blastp)
-        log.write("\nScore file : "+Score_file)  
-        log.write("\nBlastp_data : "+Blastp_data)
-        log.write("\nsave rawblastp score : "+str(save_raw_blastp_score))
-        log.write("\n")   
+    log.write(str(datetime.datetime.now()))
+    log.write("\nmode :")
+    for i in mode:
+        log.write(" " + i)
+    log.write("\ngenomes : ")
+    for i in user_selected_number:
+        log.write(selected_species_dic[i] + " ")
+    log.write("\ncpu_count : " + str(cpu_count))
+    log.write("\nblastp matrix : " + blastp_matrix)
+    if "3" in mode:
+        log.write("\ninflation_factor : " + str(inflation_factor))
+        log.write("\nCluster out : " + Cluster_out)
+    log.write("\nSpecies : " + Species)
+    log.write("\nBlastp : " + Blastp)
+    log.write("\nScore file : " + Score_file)
+    log.write("\nBlastp_data : " + Blastp_data)
+    log.write("\nsave rawblastp score : " + str(save_raw_blastp_score))
+    log.write("\n")
 
 start_time_OBH = time.time()
 if "1" in mode:    # 1 is for Blastp Run
     backward_best_hit_work_list = oneway_threshold_best_hit(mode)
-    #print("Back Ward Best Hit result", backward_best_hit_work_list)
+    # print("Back Ward Best Hit result", backward_best_hit_work_list)
     pool = multiprocessing.Pool(cpu_count)
     results = pool.map(backward_best_hit, backward_best_hit_work_list)
-    #"function_name is backward_best_hit and the parameter is backward_best_hit_work_list"
+    # "function_name is backward_best_hit and the parameter is backward_best_hit_work_list"
     pool.close()
     pool.join()
 
 elif "2" in mode:
     used_precalculated_data_list = []
     new_calculated_data_list = []
-    #precalculated_data_list = os.listdir(
-    print("Threshold_Score passed is",threshold_score)
+    # precalculated_data_list = os.listdir(
+    # print("Threshold_Score passed is",threshold_score)
     precalculated_data_list = glob.glob(
-        Blastp_data+"*oneway_threshold_best_hit_Score"+str(threshold_score)) 
-        #_S changed to Score file name and copy score file from score_file to blastp_file folder manually to speed up the system
-        # glob.glob function may not work properly in windows so  need to check the  result
+        Blastp_data + "*oneway_threshold_best_hit_Score" + str(threshold_score))
+    # _S changed to Score file name and copy score file from score_file to blastp_file folder manually to speed up the system
+    # glob.glob function may not work properly in windows so  need to check the  result
     backward_best_hit_work_list = oneway_threshold_best_hit(mode)
-    #" This function will also append"
+    # " This function will also append"
     # If backward_best_hit_work_list is an empty list, pool instance can't finsh the work.
-    if not backward_best_hit_work_list == []: 
+    if not backward_best_hit_work_list == []:
         # If backward_best_hit_work_list is an empty list, pool instance can't finsh the work.
         "The pool only run if backward best_hit_work_list has some value."
         pool = multiprocessing.Pool(cpu_count)
         # multiprocessing.pool() for Parallel
         results = pool.map(backward_best_hit, backward_best_hit_work_list)
-        #backward_best_hit is the function and backward_best_hit_work_list is list parameter
+        # backward_best_hit is the function and backward_best_hit_work_list is list parameter
         pool.close()
         pool.join()
     else:
         results = [0, 0]
 
-#del_file("./", "query*") #Delete all files start with query
+# del_file("./", "query*") #Delete all files start with query
 "Since the  query files will replaced by new files"
 
 finish_time_OBH = time.time()
 blastp_time_log = float(((finish_time_OBH - start_time_OBH)/60))
 print("BLASTP searches + forward best Hit + backwardbest hit took %f minutes" %
       blastp_time_log)
-#Del_file("./","query*") #delete all files of query
+# Del_file("./","query*") #delete all files of query
 with open(Log_file_name, 'a') as log:
-    log.write("backward_best_hit took "+str(max(results))+"minutes\n")
-    #results will not be empty because of pool not show any results then results = [0,0]
+    log.write("backward_best_hit took " + str(max(results)) + "minutes\n")
+    # results will not be empty because of pool not show any results then results = [0,0]
     log.write("BLASTP + Best_Hit + backward_best_hit searches took " +
-              str(blastp_time_log)+" minutes\n")
+              str(blastp_time_log) + " minutes\n")
 
 if "3" in mode:
     start_time_clustering = time.time()
@@ -1211,7 +1229,7 @@ if "3" in mode:
     """queue is a linear data structure that stores items in First In First Out(FIFO) manner.
     Create a queue object with a given maximum size.If maxsize is <=0, the queue size is infinite.
     the default
-    queue.Queue(maxsize = 0) 
+    queue.Queue(maxsize = 0)
     """
     print("\n>>>> Start mcl algorithm and clustering ortholog <<<<")
     "the values of these blank list and dic is added inside the function which is very bad"
@@ -1229,40 +1247,41 @@ if "3" in mode:
         # myvba=gb is a database
         for i in id_read:
             gene_name, gene_id = i.split()
-            gene_id_dic[gene_id.replace("\n", "")] = gene_name  # remove "\n"
+            # remove "\n",and create a new dic
+            gene_id_dic[gene_id.replace("\n", "")] = gene_name
 
     if "1" in mode:
         for i in user_selected_number:
             for k in user_selected_number:
                 if k < i:
-                    #print(k,"is less than ", i)
+                    # print(k,"is less than ", i)
                     pass
                 elif i == k:
                     "If the both species is same, then read_equal_bbh() function will run"
                     read_equal_bbh(
-                        Score_file+selected_species_dic[i]+"_"+selected_species_dic[k])
+                        Score_file + selected_species_dic[i] + "_" + selected_species_dic[k])
                 elif i != k:
                     "If both the species are different then read_unequal_bbh() function will run"
                     read_unequal_bbh(
-                        Score_file+selected_species_dic[i]+"_"+selected_species_dic[k])
+                        Score_file + selected_species_dic[i] + "_" + selected_species_dic[k])
 
     elif "2" in mode:
         for used_data in used_precalculated_data_list:
             "used_precalculated_data_list is return from function one_way_threshold_best_hit(mode)  "
             first, second = used_data.split("_")
             if first == second:
-                #if Both genes are same
-                read_equal_bbh(Blastp_data+used_data)
+                # if Both genes are same
+                read_equal_bbh(Blastp_data + used_data)
             elif first != second:
-                read_unequal_bbh(Blastp_data+used_data)
+                read_unequal_bbh(Blastp_data + used_data)
 
         for new_data in new_calculated_data_list:
-            #"new_calculated_data_list is lilst appended in Function Oneway_threshold_best_hit(mode =2) "
+            # "new_calculated_data_list is lilst appended in Function Oneway_threshold_best_hit(mode =2) "
             first, second = new_data.split("_")
             if first == second:
-                read_equal_bbh(Score_file+new_data)
+                read_equal_bbh(Score_file + new_data)
             elif first != second:
-                read_unequal_bbh(Score_file+new_data)
+                read_unequal_bbh(Score_file + new_data)
 
     matched_BBH_data = []
     matched_BBH_element_data_set = []
@@ -1275,20 +1294,20 @@ if "3" in mode:
                 get_results = results.get()
                 temp_results_list.append(get_results)
             matched_BBH_data.append(temp_results_list)
-
     for data in matched_BBH_data:
         matrix_clustering_ortholog(data)
-        #matrix_clustering_ortholog(data, bar)
+        # matrix_clustering_ortholog(data, bar)
     finish_time_clustering = time.time()
     mcl_time_log = float((finish_time_clustering - start_time_clustering)/60)
     remark_time_log = float((finish_time_clustering - start_time_OBH)/60)
     print("mcl algorithm and Ortholog clustering took %.2f minutes" % mcl_time_log)
     print("owPRemark program took %.2f minutes" % remark_time_log)
+    print("All Code Success Fully executed")
 
     if "3" in mode:
         with open(Log_file_name, 'a') as log:
-            log.write("Ortholog count : "+str(ortholog_count)+"," +
-                      " Cluster count : "+str(cluster_count-1)+"\n")
+            log.write("Ortholog count : " + str(ortholog_count) + "," +
+                      " Cluster count : " + str(cluster_count-1) + "\n")
             log.write("mcl algorithm and Ortholog clustering took " +
-                      str(mcl_time_log)+" minutes\n")
-            log.write("XXX program took "+str(remark_time_log) + "minutes\n")
+                      str(mcl_time_log) + " minutes\n")
+            log.write("XXX program took " + str(remark_time_log) + "minutes\n")

@@ -1,0 +1,10 @@
+2020-04-02 11:30:09.155618
+mode : 1
+genomes : LLA Log 
+cpu_count : 1
+blastp matrix : BLOSUM82
+Species : ./species/
+Blastp : blastp
+Score file : ./score_file/
+Blastp_data : ./blastp_data/
+save rawblastp score : True

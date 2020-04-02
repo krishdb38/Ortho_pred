@@ -790,7 +790,7 @@ if not sys.argv[1:]:
                           + "Enter the number of process to use in this program (1 ~ %s): " % multiprocessing.cpu_count())
     if "3" in mode :
         inflation_factor = input("Enter the inflation factor to cluster: ")
-        Cluster_out = raw_input("Set the name of clustering output : ")
+        Cluster_out = raw_input("Set the name of clustering output : ") #the return type is always string
         
     
 elif sys.argv[1:] :

@@ -14,7 +14,7 @@ import numpy
 import copy
 import operator
 import pprint
-from itertools import *
+from itertools import repeat
 import argparse
 import datetime
 from sys import platform   # To verify the Operating Sys Win or Linux
