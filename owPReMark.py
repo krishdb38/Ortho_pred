@@ -19,6 +19,7 @@ from itertools import repeat
 import numpy as np
 import numpy.matlib      # For Mathmatical (Algebra) Operation
 from alive_progress import alive_bar  # For Progress Bar
+from Bio import SeqIO
 
 __author__ = " SS Kim & Adhikari Krish"
 __teammates__ = [" pk", "okg"]
@@ -51,10 +52,10 @@ from different genomes and cluster the orthologs to ortholog groups.""",
 ESSENTIAL_GROUP = PARSER.add_argument_group('Essential arguments')
 BLASTP_GROUP = PARSER.add_argument_group('blastp optional arguments')
 MCL_GROUP = PARSER.add_argument_group('clustering optional arguments')
-ESSENTIAL_GROUP.add_argument('-M', '--mode',
+ESSENTIAL_GROUP.add_argument('-M', '--MODE',
                              action='store',
                              nargs='+',
-                             dest='mode',
+                             dest='MODE',
                              choices=['1', '2', '3'],
                              help="""
                                 1 : BLASTP
@@ -110,7 +111,7 @@ BLASTP_GROUP.add_argument('-s', '--species',
 BLASTP_GROUP.add_argument('-b', '--blastp',
                           action='store',
                           default="blastp",  # blastp must be in your system path
-                          dest='Blastp',
+                          dest='BLASTP',
                           help='set the path of blastp file to run the blastp program.\
                               The default is "blastp".')
 BLASTP_GROUP.add_argument('-F', '--scorefile',
@@ -121,7 +122,7 @@ BLASTP_GROUP.add_argument('-F', '--scorefile',
 BLASTP_GROUP.add_argument('-B', '--blastp_data',
                           action='store',
                           default='./blastp_data/',
-                          dest='Blastp_data',
+                          dest='BLASTP_DATA',
                           help='set the path of precalculated blastp data.\
                               The default path is "./blastp_data/".')
 MCL_GROUP.add_argument('-i', '--IF',
@@ -140,7 +141,7 @@ MCL_GROUP.add_argument('-l', '--loop',
 MCL_GROUP.add_argument('-o', '--out',
                        action='store',
                        default='./cluster_out',
-                       dest='Cluster_out',
+                       dest='CLUSTER_OUT',
                        help=""""
                        set the path and name of ortholog cluster file,
                        log and error_warning file.
@@ -167,19 +168,15 @@ def matrix_name():
     3. BLOSUM80 :- More related Proteins\n
     Other Keys will exit the Program
     """)
-    metrix_num = int(input("\nEnter a matrix number: "))
-    result = None
-    if metrix_num not in (1, 2, 3):
+    metrix_num = int(input("\nEnter a matrix number:\t"))
+    matrix_dic = {1:"BLOSUM45", 2:"BLOSUM62", 3:"BLOSUM80"}
+    if metrix_num  in (1, 2, 3):
+        print(matrix_dic[metrix_num], "Matrix selected")
+        return matrix_dic[metrix_num]
+    else:
         print("Wrong input *%s*Sorry not in list\n" %
               metrix_num, "*"*20, "Good Bye", "*"*20, "\n")
         sys.exit(2)
-    if metrix_num == 1:
-        result = "BLOSUM45"
-    elif metrix_num == 2:
-        result = "BLOSUM62"
-    elif metrix_num == 3:
-        result = "BLOSUM80"
-    return result
 
 
 def query_sequence(genome):
@@ -192,15 +189,30 @@ def query_sequence(genome):
     gene_seq_list = []  # container to  store gene id with seq
     try:
         with open(SPECIES+genome) as gene:
+            # open genome file like AAE HIN
             for each_line in gene:
                 if ">" in each_line and gene_seq != "":
+                    # starting with ">" and not overlap
                     gene_seq_list.append(gene_seq)
+                    # added gene name to the first and gene_seq will blank
                     gene_seq = ""
                 gene_seq = gene_seq+each_line
-            gene_seq_list.append(gene_seq)
+                # add each line of seq till ">" not found
+            gene_seq_list.append(gene_seq)  # last position gene will added
             return gene_seq_list
     except IOError as err:
         print("IOError occurred in query_sequence function : " + str(err))
+
+
+def query_seq_(genome):
+    """This Function Read Fasta (Genome) file and return as a list Format
+    with gene Position and Sequence Developed by Krish"""
+    genome = SPECIES+genome
+    try:
+        return [(seq_record.id+"\n"+str(seq_record.seq)) for seq_record in SeqIO.parse(genome, "fasta")]
+        # To understand this Function Bio Python library needs to be studied
+    except IOError as err:
+        print(str(err))
 
 
 def write_query(query, parallel_num):
@@ -217,7 +229,7 @@ def write_query(query, parallel_num):
 
 def run_blast(subject, parallel_num):
     """
-    By this Function it will create a Pipe line to run Blastp in Computer by input Parameter.
+    By this Function it will create a Pipe line to run blastp in Computer by input Parameter.
     Subject is whole Genome and parallel_number is query file Created in early step.
     Running a big file is time Consuming.The parameters passed in blastp are
     The Output Format 10 --> Comma Separated Values
@@ -236,14 +248,13 @@ def run_blast(subject, parallel_num):
     cmd = ["blastp", "-query", "./query/query_"+str(parallel_num), "-subject", subject,
            "-matrix", blastp_matrix, "-outfmt", "10 qseqid sseqid score length"]
 
-    run_blastp = subprocess.run(cmd, capture_output=True, text=True, check=False)
-    # If you want to run in Windows pass shell = True
+    run_blastp = subprocess.run(cmd, capture_output = True, text = True)
+    # Only for version > 3.7
     if run_blastp.stderr:
         # "If Error rise log file will print and write into log file"
         print(run_blastp.stderr)
         with open(Log_file_name, 'a+') as err:
             err.write(str(run_blastp.stderr))
-
     return run_blastp.stdout
 
 
@@ -468,22 +479,24 @@ def run_parallel_query(species_of_query, species_of_subject, query_v, parallel_n
 
 def oneway_threshold_best_hit(mode_):
     """ This Function accept the mode and Run program and return
-     backward_best_hit_work_list mode 1 and 2 is supported """
+     backward_best_hit_work_list mode 1 and 2 is supported
+     python continue_loop """
+
     b_info = "Running the blastp & forward best hit searches "
     process_list = []
     backward_best_hit_work_list_ = []
+    # !! need to varify global variable
     if "1" in mode_:
         # """We have 3 Mode 1 is for blastp,
         # Mode 2 is for BLASTP using precalcualted data and
         # Mode 3 is for clustering"""
-        for i in user_selected_number:  # Select species to write query
+        for i in USER_SELECTED_NUMBER:  # Select species to write query
             query_v = query_sequence(SELECTED_SPECIS_DIC[i])
             # query_v is a list Format  with a position gene id , Seq
             # User Selected  [1, 3, 5] is list of User input
-            for k in user_selected_number:
+            for k in USER_SELECTED_NUMBER:
+                # ! changed by Krish
                 if k < i:
-                    # gene ====> query 1->1 1->2 1->3 2->2 2->3
-                    # Forward checking will skip the same or less
                     continue
                 else:
                     print(b_info+" between %s genome and %s genome"
@@ -551,10 +564,10 @@ def oneway_threshold_best_hit(mode_):
         print("\nMode 2, Running from precalculated data sets which will save the Time")
         # print(len(precalculated_data_list),"oneway_threshold_best_hit_ files are located")
         # # !!! Delete This row later
-        for i in user_selected_number:  # Select species to write query
+        for i in USER_SELECTED_NUMBER:  # Select species to write query
             query_v = query_sequence(SELECTED_SPECIS_DIC[i])
-            for k in user_selected_number:  # Select of subject
-                if Blastp_data+SELECTED_SPECIS_DIC[i]+"_"+SELECTED_SPECIS_DIC[k]\
+            for k in USER_SELECTED_NUMBER:  # Select of subject
+                if BLASTP_DATA+SELECTED_SPECIS_DIC[i]+"_"+SELECTED_SPECIS_DIC[k]\
                     + "_oneway_threshold_best_hit_Score"\
                         + str(threshold_score) in precalculated_data_list:
                     print("Skipped")
@@ -767,7 +780,7 @@ def matching_bbh(target):
 
     for j in unequal_BBH_data:
         if j[2] == 0:
-            pass
+            pass  # ! Remove this later
         else:
             if copy_target[0] == j[0] or copy_target[0] == j[1] \
                 or copy_target[1] == j[0] or copy_target[1] == j[1]:
@@ -954,7 +967,7 @@ def clustering(row_data, col_data, score_matrix):
                     ortholog_sum += ortholog_temp_list.index(element)+1
 
                 except ValueError:
-                    with open(Cluster_out+"_geneID_S"+str(threshold_score) +
+                    with open(CLUSTER_OUT+"_geneID_S"+str(threshold_score) +
                               "_"+str(inflation_factor), "a") as ortholog_list_save:
                         ortholog_print = "cluster "+str(CLUSTER_COUNT)+" :"
                         ortholog_list_save.write(ortholog_print)
@@ -974,7 +987,7 @@ def clustering(row_data, col_data, score_matrix):
                                 # it will print the original ID(get_ortholog).
                                 gene_id_queue.put(get_ortholog)
                         ortholog_list_save.write("\n")
-                    with open(Cluster_out+"_KO_ID_S"\
+                    with open(CLUSTER_OUT+"_KO_ID_S"\
                               + str(threshold_score)\
                               + "_"+str(inflation_factor), "a")\
                             as ortholog_list_geneID_save:
@@ -1017,14 +1030,15 @@ def parallel_matrix_division(data_):
 def read_species(pr=1):  # default 1 which will always shows the name of SPECIES
     """ If pr is 1, it will print "SPECIES_List"  Other wise only return the Value in dic Format """
     read_species_ = os.listdir(COMMAND_OPTIONS.SPECIES)
-    selected_species_dic = {}  # list
-    backward_selected_species_dic_ = {}  # list
+    selected_species_dic = {}
+    backward_selected_species_dic_ = {}
     for i, species in enumerate(sorted(read_species_), start=1):
         selected_species_dic[i] = species
         backward_selected_species_dic_[species] = i
         if pr == 1:
             print(str(i)+".", species)
         number = i
+    # number for total length of species
     return selected_species_dic, backward_selected_species_dic_, number
 
 
@@ -1044,18 +1058,18 @@ def check_file(file):
     file is user input value for clustering output.
     Check the file weather exists or not .
     if exist this will warn to use other name
-    Cluster_out is file.Cluster_out(results)
+    CLUSTER_OUT is file.CLUSTER_OUT(results)
     + _geneID_S+ str(threshold_score)
-    +"_"+str(inflation_factor) or Cluster_out+"_KO_ID_S"+str(threshold_score)
+    +"_"+str(inflation_factor) or CLUSTER_OUT+"_KO_ID_S"+str(threshold_score)
     +"_"+str(inflation_factor))
     are files created by mcl algorithm so if these file exist system will exit
     """
     # Declare all variable as a globally Added
-    # global Cluster_out, threshold_score, infinite_loop
+    # global CLUSTER_OUT, threshold_score, infinite_loop
     # list all related files in same directory local variable
     file_list = glob.glob(file + '*')
-    if (Cluster_out+"_geneID_S"+str(threshold_score)
-            + "_"+str(inflation_factor) or Cluster_out+"_KO_ID_S"
+    if (CLUSTER_OUT+"_geneID_S"+str(threshold_score)
+            + "_"+str(inflation_factor) or CLUSTER_OUT+"_KO_ID_S"
             + str(threshold_score)+"_"+str(inflation_factor)) in file_list:
         print("Please, set other name,%s is of output.line Number 966")
         sys.exit(2)
@@ -1111,9 +1125,9 @@ def read_unequal_bbh(path):
 
 print("="*82)
 print("||\t****Default Variables(Values)****\t\t\t\t\t||")
-print("||\tBlastp                 = %s\t\t\t\t\t\t||" % COMMAND_OPTIONS.Blastp)
-print("||\tBlastp_data            = %s\t\t\t\t\t||" %
-      COMMAND_OPTIONS.Blastp_data)
+print("||\tBlastp                 = %s\t\t\t\t\t\t||" % COMMAND_OPTIONS.BLASTP)
+print("||\tBLASTP_DATA            = %s\t\t\t\t\t||" %
+      COMMAND_OPTIONS.BLASTP_DATA)
 print("||\tblstp_matrix           = %s\t\t\t\t\t||" %
       COMMAND_OPTIONS.blastp_matrix)
 print("||\tcpu_count              = %s\t\t\t\t\t\t||" %
@@ -1124,9 +1138,9 @@ print("||\tinfinite_loop          = %s\t\t\t\t\t\t||" %
       COMMAND_OPTIONS.infinite_loop)
 print("||\tinflation_factor       = %s\t\t\t\t\t\t||" %
       COMMAND_OPTIONS.inflation_factor)
-print("||\tmode                   = %s\t\t\t\t\t\t||" % COMMAND_OPTIONS.mode)
-print("||\tCluster_out            = %s\t\t\t\t\t||" %
-      COMMAND_OPTIONS.Cluster_out)
+print("||\tMODE                   = %s\t\t\t\t\t\t||" % COMMAND_OPTIONS.MODE)
+print("||\tCLUSTER_OUT            = %s\t\t\t\t\t||" %
+      COMMAND_OPTIONS.CLUSTER_OUT)
 print("||\tthreshold_score        = %s\t\t\t\t\t\t||" %
       COMMAND_OPTIONS.threshold_score)
 print("||\tsave_raw_blastp_score  = %s\t\t\t\t\t\t||" %
@@ -1142,15 +1156,16 @@ print("Ortholog Detection Program Starts Now\n")
 
 if not sys.argv[1:]:
     # If not Parameter Passed the Manual Process will Start,
-    # in case of mode the input parameter can be different
+    # in case of MODE the input parameter can be different
     # so we will not apply the below code function
     print("1. BLASTP. \n2. BLASTP using precalculated data. \n3. clustering.\n")
-    mode = input(">> Select a mode or modes (1 2 *OR* 1 3 *OR* 2 3): ")
+    MODE = input(">> Select a MODE or MODEs space seprater\n\
+        (1 3 ***OR*** 2 3): ").split(" ")
     SELECTED_SPECIS_DIC, backward_selected_species_dic, number_i = read_species(
         1)  # read_species(1) will return dictionary type
     SELECTED_NUMBER = input(
         ">> Select Genomes to detect Orthologs(e.g. 1 2 3 4 5 or 1-5) : ")
-
+    # !! later we will use lambda function to conrol un usual number
     if SELECTED_NUMBER.find('-') > 0:
         # find() return the index position of first occurance
         SN = SELECTED_NUMBER.split("-")
@@ -1159,21 +1174,21 @@ if not sys.argv[1:]:
             print("\nWrongInput\nInput must be less than", number_i)
             sys.exit(2)
         else:
-            user_selected_number = range(int(SN[0]), int(SN[-1])+1)
-            for j in user_selected_number:
+            USER_SELECTED_NUMBER = range(int(SN[0]), int(SN[-1])+1)
+            for j in USER_SELECTED_NUMBER:
                 print(SELECTED_SPECIS_DIC[j], end=" ")  # loop in Dic
             print("Selected!!")
 
     else:
-        user_selected_number = sorted(
-            set([int(read_species) for read_species in SELECTED_NUMBER.split()]))
+        USER_SELECTED_NUMBER = sorted(
+            set([int(_) for _ in SELECTED_NUMBER.split()]))
         # Create a set (remove repeating)
-        if int(user_selected_number[-1]) > number_i:
+        if int(USER_SELECTED_NUMBER[-1]) > number_i:
             print("\nWrongInput\nInput must be less than", number_i)
             sys.exit(2)
             # Greater than Genome list will system error
         else:
-            for j in user_selected_number:
+            for j in USER_SELECTED_NUMBER:
                 print(SELECTED_SPECIS_DIC[j], end=" ")
             print("Selected!!")
     blastp_matrix = matrix_name()
@@ -1185,19 +1200,19 @@ if not sys.argv[1:]:
 
 elif sys.argv[1:]:
     genomes = COMMAND_OPTIONS.genomes
-    mode = COMMAND_OPTIONS.mode
+    MODE = COMMAND_OPTIONS.MODE
     cpu_count = COMMAND_OPTIONS.cpu_count
     blastp_matrix = COMMAND_OPTIONS.blastp_matrix
     inflation_factor = COMMAND_OPTIONS.inflation_factor
     SELECTED_SPECIS_DIC, backward_selected_species_dic, number_i = read_species()
-    user_selected_number = [backward_selected_species_dic[ele]
+    USER_SELECTED_NUMBER = [backward_selected_species_dic[ele]
                             for ele in genomes]  # select by value of dictionary
-    Cluster_out = COMMAND_OPTIONS.Cluster_out     # File Name to save
+    CLUSTER_OUT = COMMAND_OPTIONS.CLUSTER_OUT     # File Name to save
 
 SPECIES = COMMAND_OPTIONS.SPECIES
-Blastp = COMMAND_OPTIONS.Blastp
+BLASTP = COMMAND_OPTIONS.BLASTP
 Score_file = COMMAND_OPTIONS.Score_file
-Blastp_data = COMMAND_OPTIONS.Blastp_data
+BLASTP_DATA = COMMAND_OPTIONS.BLASTP_DATA
 save_raw_blastp_score = COMMAND_OPTIONS.save_raw_blastp_score
 threshold_score = COMMAND_OPTIONS.threshold_score
 verbose = COMMAND_OPTIONS.verbose
@@ -1207,51 +1222,53 @@ log_time = datetime.datetime.now().strftime("_%Y_%m_%d_%H_%M_%S")
 
 # print(COMMAND_OPTIONS.SPECIES ,COMMAND_OPTIONS.Blastp ,COMMAND_OPTIONS.Score_file)
 
-if "3" in mode:
+if "3" in MODE:
     # Mode 3 is for clustering the matrix data.
-    print("3 mode clustering is selected")
+    # print("3 MODE clustering is selected")
     inflation_factor = input("Enter the inflation factor to cluster: ")
-    Cluster_out = input("Set the name of clustering output Folder : ")
-    """Cluster_out is user input value --> the name of clustering output <--results
+    CLUSTER_OUT = input("Set the name of clustering output Folder : ")
+    """CLUSTER_OUT is user input value --> the name of clustering output <--results
     """
-    check_file(Cluster_out)
+    check_file(CLUSTER_OUT)
     # if same file for user input species and cluester out and inflation factor is same
     # no need to run cluster again
 
 # del_file(Score_file, "*")
 # # this Function will delete all files inside currently folder
 
-if "3" in mode:
-    Log_file_name = "./cluster_out/" + Cluster_out + "_S"\
+if "3" in MODE:
+    # for log file location
+    Log_file_name = "./cluster_out/" + CLUSTER_OUT + "_S"\
         + str(threshold_score) + "_" \
         + str(inflation_factor) + log_time+"_log.txt"
 
-elif "3" not in mode:  # elif not "3" in mode:
+elif "3" not in MODE:
+    # if 3 is not passed the log file will store inside "log_files"
     Log_file_name = 'log_files/Log' + log_time+"_log.txt"
 
 with open(Log_file_name, 'w') as log:
     log.write(str(datetime.datetime.now()))
-    log.write("\nmode :")
-    for i in mode:
+    log.write("\nMODE :")
+    for i in MODE:
         log.write(" " + i)
     log.write("\ngenomes : ")
-    for i in user_selected_number:
+    for i in USER_SELECTED_NUMBER:
         log.write(SELECTED_SPECIS_DIC[i] + " ")
     log.write("\ncpu_count : " + str(cpu_count))
     log.write("\nblastp matrix : " + blastp_matrix)
-    if "3" in mode:
+    if "3" in MODE:
         log.write("\ninflation_factor : " + str(inflation_factor))
-        log.write("\nCluster out : " + Cluster_out)
+        log.write("\nCluster out : " + CLUSTER_OUT)
     log.write("\nSPECIES : " + SPECIES)
-    log.write("\nBlastp : " + Blastp)
+    log.write("\nBLASTP : " + BLASTP)
     log.write("\nScore file : " + Score_file)
-    log.write("\nBlastp_data : " + Blastp_data)
+    log.write("\nBLASTP_DATA : " + BLASTP_DATA)
     log.write("\nsave rawblastp score : " + str(save_raw_blastp_score))
     log.write("\n")
 
 start_time_OBH = time.time()
-if "1" in mode:    # 1 is for Blastp Run
-    backward_best_hit_work_list = oneway_threshold_best_hit(mode)
+if "1" in MODE:    # 1 is for Blastp Run
+    backward_best_hit_work_list = oneway_threshold_best_hit(MODE)
     # print("Back Ward Best Hit result", backward_best_hit_work_list)
     pool = multiprocessing.Pool(cpu_count)
     results = pool.map(backward_best_hit, backward_best_hit_work_list)
@@ -1259,16 +1276,16 @@ if "1" in mode:    # 1 is for Blastp Run
     pool.close()
     pool.join()
 
-elif "2" in mode:
+elif "2" in MODE:
     used_precalculated_data_list = []
-    # the values are appended from oneway_threshold_best_hit(mode)
+    # the values are appended from oneway_threshold_best_hit(MODE)
     new_calculated_data_list = []
     precalculated_data_list = glob.glob(
-        Blastp_data + "*oneway_threshold_best_hit_Score" + str(threshold_score))
+        BLASTP_DATA + "*oneway_threshold_best_hit_Score" + str(threshold_score))
     # _S changed to Score file name and copy score file
     # from score_file to blastp_file folder manually to speed up the system
     # glob.glob function may not work properly in windows so  need to check the  result
-    backward_best_hit_work_list = oneway_threshold_best_hit(mode)
+    backward_best_hit_work_list = oneway_threshold_best_hit(MODE)
     # This function also add elements to used_precalculated_data_list
     # If backward_best_hit_work_list is an empty list, pool instance can't finsh the work.
     if backward_best_hit_work_list != []:
@@ -1297,7 +1314,7 @@ with open(Log_file_name, 'a') as log:
     log.write("BLASTP + Best_Hit + backward_best_hit searches took " +
               str(blastp_time_log) + " minutes\n")
 
-if "3" in mode:
+if "3" in MODE:
     start_time_clustering = time.time()
     ##########################################################################################
     # generate matrix and calculate the matrix using mcl algorithm and cluster the ortholog."""
@@ -1325,13 +1342,13 @@ if "3" in mode:
             # remove "\n",and create a new dic
             gene_id_dic[gene_id.replace("\n", "")] = gene_name
 
-    if "1" in mode:
-        # The file location is different in each mode
-        # in mode 2 files are instide blastp_data but
-        # in mode 1 files are inside score_file
+    if "1" in MODE:
+        # The file location is different in each MODE
+        # in MODE 2 files are instide blastp_data but
+        # in MODE 1 files are inside score_file
 
-        for i in user_selected_number:
-            for k in user_selected_number:
+        for i in USER_SELECTED_NUMBER:
+            for k in USER_SELECTED_NUMBER:
                 if k < i:
                     # print(k,"is less than ", i)
                     pass
@@ -1344,22 +1361,22 @@ if "3" in mode:
                     read_unequal_bbh(
                         Score_file + SELECTED_SPECIS_DIC[i] + "_" + SELECTED_SPECIS_DIC[k])
 
-    elif "2" in mode:
-        # The file location is different in each mode
-        # mode 2 is for fast precalcualted data sets
+    elif "2" in MODE:
+        # The file location is different in each MODE
+        # MODE 2 is for fast precalcualted data sets
         # and datas are inside the blastp_data"
         for used_data in used_precalculated_data_list:
-            # used_precalculated_data_list is return from function one_way_threshold_best_hit(mode)
+            # used_precalculated_data_list is return from function one_way_threshold_best_hit(MODE)
             first, second = used_data.split("_")
             if first == second:
                 # if Both genes are same
-                read_equal_bbh(Blastp_data + used_data)
+                read_equal_bbh(BLASTP_DATA + used_data)
             elif first != second:
-                read_unequal_bbh(Blastp_data + used_data)
+                read_unequal_bbh(BLASTP_DATA + used_data)
 
         for new_data in new_calculated_data_list:
             # "new_calculated_data_list is lilst appended in
-            # Function Oneway_threshold_best_hit(mode =2) "
+            # Function Oneway_threshold_best_hit(MODE =2) "
             first, second = new_data.split("_")
             if first == second:
                 read_equal_bbh(Score_file + new_data)
@@ -1386,7 +1403,7 @@ if "3" in mode:
     print("mcl algorithm and Ortholog clustering took %.2f minutes" % MCL_TIME_LOG)
     print("owPRemark program took %.2f minutes" % REMARK_TIME_LOG)
 
-    if "3" in mode:
+    if "3" in MODE:
         with open(Log_file_name, 'a') as log:
             log.write("Ortholog count : " + str(ortholog_count) + "," +
                       " Cluster count : " + str(CLUSTER_COUNT-1) + "\n")

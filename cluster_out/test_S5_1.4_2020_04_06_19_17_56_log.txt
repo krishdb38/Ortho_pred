@@ -1,5 +1,0 @@
-backward_best_hit took 0.008614317576090495minutes
-BLASTP + Best_Hit + backward_best_hit searches took 3.9314296801884967 minutes
-Ortholog count : 15, Cluster count : 5
-mcl algorithm and Ortholog clustering took 0.008906801541646322 minutes
-XXX program took 3.940396519502004minutes

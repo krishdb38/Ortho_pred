@@ -1,3 +1,0 @@
-This Folder is Container to Store Files for Mode 2 that is calcualte Using pre Calculated data
-* oneway_threshold_best_hit_S5 .....
-in this folder copy score file manually if you want to check new 
