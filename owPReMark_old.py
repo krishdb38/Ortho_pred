@@ -674,18 +674,13 @@ def search_equal_bbh_data(target_a):
     The if with pass statement will be later updated """
     # print("search_equal_bbh_data")
     put_data = equal_BBH_data_dic[target_a]
-    if put_data[1] == 0:
-        # this can be done by  if put_data[1]!=0
-        pass
-    else:
+    if put_data[1] != 0:
         copy_put_data = copy.copy(put_data)
         copy_put_data.insert(0, target_a)
         results.put(copy_put_data)
         equal_BBH_data_dic[target_a][1] = 0
         for i in second_equal_BBH_data:
-            if i[2] == 0:
-                pass
-            else:
+            if i[2] != 0:
                 if i[0] == target_a or i[1] == target_a:
                     copy_second_put_data = copy.copy(i)
                     # Don't put results as queue. Because the tasks will put copy_second_put_data to results as queue.

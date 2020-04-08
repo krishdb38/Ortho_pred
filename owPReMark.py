@@ -206,7 +206,8 @@ def query_sequence(genome):
 
 def query_seq_(genome):
     """This Function Read Fasta (Genome) file and return as a list Format
-    with gene Position and Sequence Developed by Krish"""
+    with gene Position and Sequence Developed by Krish.
+    The result of this function is not running while blast """
     genome = SPECIES+genome
     try:
         return [(seq_record.id+"\n"+str(seq_record.seq)) for seq_record in SeqIO.parse(genome, "fasta")]
@@ -387,7 +388,8 @@ def run_parallel_query(species_of_query, species_of_subject, query_v, parallel_n
         # declare your set of items for loop, bar is blacklisted
         for j in query_v:
             bar_()  # Call after Consuming One Item
-            write_query(j, parallel_num)  # if 1 Added Here Add also to Run
+            write_query(j, parallel_num)
+            # if 1 Added Here Add also to Run
         # This Function Only Write a file with j name and parallel_num i.e CPU Count
             blastp_score = run_blast(
                 SELECTED_SPECIS_DIC[species_of_subject], parallel_num)
@@ -639,7 +641,16 @@ def oneway_threshold_best_hit(mode_):
 
 
 def backward_best_hit(args):
-    """ This will  calculate backward_best_hit with """
+    """ This will  calculate backward_best_hit with
+    This function open 2 files from score_files folder
+    Genome_genome_best_score_S_5_parallel_num and
+    Genome_Genome_blastp_score_split_list_S_5_parallel_num
+    and convert last 2 digits to integer values.
+    and again loopdone in
+    forward_best_hit_score_list and
+    blastp_score_split_list
+
+    """
     bck_info = "Running the backward_best_hit"
     # print(bck_info)
     species_of_query, species_of_subject, query_v_len = args
@@ -653,24 +664,39 @@ def backward_best_hit(args):
         for parallel_num in range(query_v_len):
             parallel_num += 1
             with open(Score_file+SELECTED_SPECIS_DIC[species_of_query]+"_"
-                      + SELECTED_SPECIS_DIC[species_of_subject] + "_"+"best_score_S"
+                      + SELECTED_SPECIS_DIC[species_of_subject]\
+                      + "_"+"best_score_S"\
                       + str(threshold_score)+"_"+str(parallel_num), "r") as best_hit_score:
+                    # AAE_gi|15605613|ref|NP_212986.1| ECO_gi|170082858|ref|YP_001732178.1| 3020 703
+                    # AAE_gi|15605614|ref|NP_212987.1| ECO_gi|170083440|ref|YP_001732760.1| 1990 404
+                    # sample of best_hit_score File
                 for each_line in best_hit_score:
+                    # the uppper line exmple is passed
                     split_each_line = each_line.split(" ")
+                    # = ['AAE_gi|15605613|ref|NP_212986.1|', 'ECO_gi|170082858|ref|YP_001732178.1|', '3020', '703']
+
                     split_each_line[2] = int(split_each_line[2])
                     split_each_line[3] = int(split_each_line[3])
                     forward_best_hit_score_list.append(split_each_line)
+
+            # convert the blastp result score length and score to integer format
             with open(Score_file+SELECTED_SPECIS_DIC[species_of_query]+"_"
                       + SELECTED_SPECIS_DIC[species_of_subject] +
                       "_"+"blastp_score_split_list_S"
                       + str(threshold_score)+"_"+str(parallel_num), 'r') as blastp_score:
+                    # AAE_gi|15605613|ref|NP_212986.1| CAC_gi|15004754|ref|NP_149214.1| 80 55
+                    # AAE_gi|15605613|ref|NP_212986.1| CAC_gi|15004707|ref|NP_149167.1| 69 14
                 for each_line in blastp_score:
                     split_each_line = each_line.split(" ")
                     split_each_line[2] = int(split_each_line[2])
                     split_each_line[3] = int(split_each_line[3])
                     blastp_score_split_list.append(split_each_line)
+
     else:
+        # if cpu length is smaller than queryV length
         for parallel_num in range(cpu_count):
+            # cpu_count is the number of cpu used by the user
+            # ! Error may raise if parallel Num is not in the file
             parallel_num += 1
             with open(Score_file+SELECTED_SPECIS_DIC[species_of_query]+"_"
                       + SELECTED_SPECIS_DIC[species_of_subject]+"_"+"best_score_S"
@@ -695,14 +721,22 @@ def backward_best_hit(args):
     for forward_best_hit_score_element in forward_best_hit_score_list:
         matching_list = []
         backward_best_score = ['-1', '-1', '-1']
-        # bar.next()
-        for element in blastp_score_split_list:
-            if element[1] == forward_best_hit_score_element[1]:
-                matching_list.append(element)
+        # length is 3 bcz the length is 3 in
+        # example of blastp_score_split_list
+        # [AAE_gi|15605613|ref|NP_212986.1| ECO_gi|170082858|ref|YP_001732178.1| 3020 703,
+        # AAE_gi|15605614|ref|NP_212987.1| ECO_gi|170083440|ref|YP_001732760.1| 1990 404 ]
+        # botth blastp_score_split_list and forward_best_hit_score_list shape are almost same
+        # for element in blastp_score_split_list:
+        #    if element[1] == forward_best_hit_score_element[1]:
+        #        matching_list.append(element)
+        # ! The upper 3 for loop be converted list Comprehensive
+        matching_list = [element for element in blastp_score_split_list\
+            if element[1]== forward_best_hit_score_element[1]]
 
         for element in matching_list:
             if int(element[2]) > int(backward_best_score[2]):
                 backward_best_score = element
+    # !! Future Purpose
     #        with open('./'+SELECTED_SPECIS_DIC[species_of_query]\
     # +"_"+SELECTED_SPECIS_DIC[species_of_subject]+'_subtraction
     # '+"_"+str(threshold_score), 'a') as subtraction :
@@ -710,6 +744,7 @@ def backward_best_hit(args):
     #            subtraction.write(str(save_data)+"\n")
 
         if int(backward_best_score[2]) - int(forward_best_hit_score_element[2]) <= threshold_score:
+            # the default threshold_score passed is 5
             with open(Score_file+SELECTED_SPECIS_DIC[species_of_query]\
                       + "_"+SELECTED_SPECIS_DIC[species_of_subject]\
                       + "_oneway_threshold_best_hit_Score"+str(threshold_score), "a")\
@@ -730,20 +765,33 @@ def backward_best_hit(args):
 
 def search_equal_bbh_data(target_a):
     """Search the equal backward best hit data. ex) AAE_AAE_backward_best_hit
-    The if with pass statement will be later updated """
+ """
     # print("search_equal_bbh_data")
+    # ! equal_BBH_data_dic is a blank dict defined in begining if mode = 3
+    # target_a -->  [HIN_gi |68249031|ref|NP_149167.1,771]
+    # [CAC_gi |15004707 |ref |NP_149167.1 , 771]
+    # target_a is list_type
+    # type of target_a is str
+    # put_data = ["AAE_gi|15600000|ref|NP_213710.1",0]
+    # target_a = AAE_gi|15600000|ref|NP_213710.1
+    # erqual_BBH_data_dic =
+    # {"AAE_gi|15600000|ref|NP_213710.1":["AAE_gi|15600000|ref|NP_213710.1",0]}
+    # equal_BBH_data_dic is a big dictionary file
+
     put_data = equal_BBH_data_dic[target_a]
-    if put_data[1] == 0:
-        # this can be done by  if put_data[1]!=0
-        pass
-    else:
+    if put_data[1] != 0:
+        # ! code changed if error raise check with old
         copy_put_data = copy.copy(put_data)
         copy_put_data.insert(0, target_a)
         results.put(copy_put_data)
         equal_BBH_data_dic[target_a][1] = 0
+        # change the number value to 0
         for i in second_equal_BBH_data:
+            # example of i
+            # ["AAE_gi|15606581|ref|NP_213505.1","AAE_gi|15606877|ref|NP_214257.1",898]
+            # ["AAE_gio|15606744|ref|NP_214124.1|","AAE_gi|15606128|ref|NP_213961.1",2170]
             if i[2] != 0 and (i[0] == target_a or i[1] == target_a):
-                # !! changed may error rise
+                # !! code changed if error raise check with old
                 copy_second_put_data = copy.copy(i)
                 # Don't put results as queue.
                 # Because the tasks will put copy_second_put_data to results as queue.
@@ -801,12 +849,16 @@ def matrix_clustering_ortholog(element_set):
     # matrix_clustering_ortholog(element_set, bar):
     # # this is Old Method old is generating is  removed
     # """ Generate the matrix of clustering ortholog. """
+    # element_set is a list collection gene id and # ! score
     row_data = []
     col_data = []
     temp_results = queue.Queue()
     # Create a queue object with a given maximum size.
     # If maxsize is <=0, teh queue size is infinite
     for element in element_set:
+        # example of element
+        # ["AAE_gi|15605623|ref|NP_212996.1", "AAE_gi|15605623|ref|NP_212996.1",998]
+        # ["AAE_gi|15004781|ref|NP_149241.1|","CAC_gi|15004781|ref|NP_149241.1|",9520]
         # if element[0] exist, returning the index in the row_data.
         if row_data.count(element[0]) > 0:
             # element[0] is data of row.
@@ -913,6 +965,7 @@ def parallel_mcl(score_matrix):
 
 def mcl(score_matrix):
     """Input score_matrix is the user selected matrix llike BLOASUM45, BLOSUM62 or BLOSUM80"""
+    print("mcl funciton running")
     count = 0
     infinitesimal_value = 10**-10
     idempotent_matrix = numpy.matlib.ones((2, 2))
@@ -921,13 +974,13 @@ def mcl(score_matrix):
         mcl_time_start = time.time()
         expansion_matrix = score_matrix ** 2
         print("shape of input score_matrix", score_matrix.shape)
-        print(expansion_matrix)
+        #print(expansion_matrix)
 
         score_matrix = np.power(expansion_matrix, float(
             inflation_factor))  # !!! Eroor
-        print(score_matrix)
+        # print(score_matrix)
         score_matrix_sum = score_matrix.sum(axis=0)
-        print(score_matrix_sum)
+        print(score_matrix_sum,"line 983")
         # create a inflation_matrix
         score_matrix = np.divide(score_matrix, score_matrix_sum)
         # identify whether inflation_matrix is idempotent matrix or not.
@@ -1106,7 +1159,7 @@ def read_equal_bbh(path):
                 # split_data[2] = 898 in the above case
                 second_equal_BBH_data.append(split_data)
     except IOError as err:
-        print(err)
+        print(err,"Skipping")
 
 
 def read_unequal_bbh(path):
