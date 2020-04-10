@@ -178,6 +178,12 @@ def matrix_name():
               metrix_num, "*"*20, "Good Bye", "*"*20, "\n")
         sys.exit(2)
 
+def check_mode(mode_):
+    check = any(x in mode_ for x in ["1","2"])
+    if not check:
+        print("You Must Enter either 1 or 2")
+        sys.exit(2)
+
 
 def query_sequence(genome):
     """
@@ -280,7 +286,13 @@ def same_species_forward_best_hit(blastp_score):
         blastp_score_split_list.append(blastp_score_element)
     # ex) k is ['gi|15605613|ref|NP_212986.1|', 'gi|15605613|ref|NP_212986.1|', '3702', '699']
     for k in blastp_score_split_list:
-        if k[0] == k[1]:    # if the Position (gene) is Same
+        # print(len(k)) ==4
+        # example of k is
+        # ["gi|15605616|ref|NP_212989.1","gi|15606180|ref|NP_213700.1","58","30"]
+        #
+        #time.sleep(5)
+        if k[0] == k[1]:
+            # same position gene will give high score,best_score
             best_score.append(k)
         elif k[0] != k[1]:
             if int(k[2]) > int(temp_best_score[2]):  # Compare score
@@ -297,11 +309,18 @@ def same_species_forward_best_hit(blastp_score):
             second_best_score.append(j)
     for bscore in second_best_score:
         # m is replaced with bscore (best_score)
-        if (best_score[0][2] == bscore[2] and int(best_score[0][3]) <= int(bscore[3]))\
-            or int(best_score[0][2]) < int(bscore[2]):
-            # '104' < '23' is True because of string.
-            # So the int function is used.
-            best_score.append(bscore)
+        # !! list index out of range ERROR
+        # print("best_score",best_score)
+        # print("bscore",bscore)
+        # time.sleep(5)
+        try:
+            if (best_score[0][2] == bscore[2] and int(best_score[0][3]) <= int(bscore[3]))\
+                or int(best_score[0][2]) < int(bscore[2]):
+                # '104' < '23' is True because of string.
+                # So the int function is used.
+                best_score.append(bscore)
+        except :
+            pass
     #  print("best Score is", best_score)
     return best_score
 
@@ -316,8 +335,8 @@ def forward_best_hit(blastp_score):
     blastp_score_split = blastp_score.split("\n")
     # delete of ['']   ex) ['gi,gi,1,1','gi,gi,2,2','']
     del blastp_score_split[-1]
-    for i in blastp_score_split:
-        blastp_score_element = i.split(',')
+    for _ in blastp_score_split:
+        blastp_score_element = _.split(',')
         blastp_score_split_list.append(blastp_score_element)
     for k in blastp_score_split_list:
         # ex) k is ['gi|15605613|ref|NP_212986.1|', 'gi|15605613|ref|NP_212986.1|', '3702', '699']
@@ -331,7 +350,7 @@ def forward_best_hit(blastp_score):
                 second_temp_best_score.append(k)
     best_score.append(temp_best_score)
     for j in second_temp_best_score:
-        if j[2] == temp_best_score[2] and j[3] == temp_best_score[3]:
+        if (j[2] == temp_best_score[2]) and (j[3] == temp_best_score[3]):
             best_score.append(j)
     return best_score, blastp_score_split_list
 
@@ -382,12 +401,13 @@ def run_parallel_query(species_of_query, species_of_subject, query_v, parallel_n
     second_oneway_threshold_best_hit,
     blastp_score_split_list and raw_blastp_score(optional) by each species.
     parallel_num is the Number of CPU selected by the user if CPu 1 selected then 1
+    # ! query_v = query_sequence(SELECTED_SPECIS_DIC[i])
     """
-    #  print("run_parallel_query Running")
+    # ! query_v ! = query_sequence(SELECTED_SPECIS_DIC[species_of_query]) why ??
     with alive_bar(len(query_v)) as bar_:
         # declare your set of items for loop, bar is blacklisted
         for j in query_v:
-            bar_()  # Call after Consuming One Item
+            # query_v is the list of the genes from genome
             write_query(j, parallel_num)
             # if 1 Added Here Add also to Run
         # This Function Only Write a file with j name and parallel_num i.e CPU Count
@@ -398,12 +418,15 @@ def run_parallel_query(species_of_query, species_of_subject, query_v, parallel_n
                 best_score, blastp_score_split_list = forward_best_hit(
                     blastp_score)  # .decode() Convert in to str format
                 # ex) AAE == AAE. It will save best_score without reversing run_blast.
+                # The sample for blastp_score and blastp_score_split_list is saved inside folder
+
                 if species_of_query == species_of_subject:
                     same_species_forward_best_score = same_species_forward_best_hit(
                         blastp_score)  # .decode()
                     for best_score_element in same_species_forward_best_score:
                         # ex) [A1 of AAE, A1 of AAE, 30]
                         if best_score_element[0] == best_score_element[1]:
+                            # if same species add write file in # !!!
                             with open(Score_file+SELECTED_SPECIS_DIC[species_of_query]\
                                 + "_" +SELECTED_SPECIS_DIC[species_of_subject]\
                                 + "_oneway_threshold_best_hit_Score"\
@@ -421,7 +444,8 @@ def run_parallel_query(species_of_query, species_of_subject, query_v, parallel_n
                                 oneway_threshold_bh.write(
                                     save_best_score)
                         else:  # ex) [A1 of AAE, A2 of AAE, 30]
-                            with open(Score_file+SELECTED_SPECIS_DIC[species_of_query]+"_"
+                            with open(Score_file+SELECTED_SPECIS_DIC[species_of_query]\
+                                      +"_"
                                       + SELECTED_SPECIS_DIC[species_of_subject]
                                       + "_second_oneway_threshold_best_hit_Score"
                                       + str(threshold_score), "a") as second_oneway_threshold_bh:
@@ -441,16 +465,17 @@ def run_parallel_query(species_of_query, species_of_subject, query_v, parallel_n
                                     + "_"\
                                     + SELECTED_SPECIS_DIC[species_of_subject]\
                                     + "_"+"best_score_S"\
-                                    + str(threshold_score)+"_"\
-                                        +str(parallel_num), "a") as save_best_hit:
+                                    + str(threshold_score)\
+                                    +"_"\
+                                    +str(parallel_num), "a") as save_best_hit:
                                 best_score_save = SELECTED_SPECIS_DIC[species_of_query]\
                                     + "_"\
                                     + best_score_element[0].split(r"\s")[0]\
                                     + " "+SELECTED_SPECIS_DIC[species_of_subject]\
                                     + "_"+best_score_element[1].split(
                                         r"\s")[0]\
-                                            + " " + best_score_element[2]\
-                                            + " " + best_score_element[3]+"\n"
+                                    + " " + best_score_element[2]\
+                                    + " " + best_score_element[3]+"\n"
                                 save_best_hit.write(best_score_save)
 
                     for blastp_score_split_list_element in blastp_score_split_list:
@@ -459,9 +484,11 @@ def run_parallel_query(species_of_query, species_of_subject, query_v, parallel_n
                                   + "_"+"blastp_score_split_list_S"
                                   + str(threshold_score)
                                   + "_"+str(parallel_num), "a") as save_blastp_score_split_list:
+
                             blastp_score_split_list_save = SELECTED_SPECIS_DIC[species_of_query]\
-                                + "_" + blastp_score_split_list_element[0].split(
-                                    r"\s")[0]\
+                                    + "_"\
+                                    + blastp_score_split_list_element[0].split(\
+                                        r"\s")[0]\
                                     + " "+SELECTED_SPECIS_DIC[species_of_subject]\
                                     + "_"+blastp_score_split_list_element[1].split(r"\s")[0]\
                                     + " " + blastp_score_split_list_element[2]\
@@ -469,7 +496,8 @@ def run_parallel_query(species_of_query, species_of_subject, query_v, parallel_n
                             save_blastp_score_split_list.write(
                                 blastp_score_split_list_save)
             else:
-                print("No value in blastp_score")
+                print("--------")
+            bar_()  # Call after Consuming One Item
             if save_raw_blastp_score:
                 with open(Score_file+SELECTED_SPECIS_DIC[species_of_query]
                           + "_"+SELECTED_SPECIS_DIC[species_of_subject]+"_S"
@@ -481,12 +509,12 @@ def run_parallel_query(species_of_query, species_of_subject, query_v, parallel_n
 
 def oneway_threshold_best_hit(mode_):
     """ This Function accept the mode and Run program and return
-     backward_best_hit_work_list mode 1 and 2 is supported
+     bbh_work_list mode 1 and 2 is supported
      python continue_loop """
 
-    b_info = "Running the blastp & forward best hit searches "
+    info = "Running the blastp & forward best hit searches "
     process_list = []
-    backward_best_hit_work_list_ = []
+    bbh_work_list_ = []
     # !! need to varify global variable
     if "1" in mode_:
         # """We have 3 Mode 1 is for blastp,
@@ -498,10 +526,12 @@ def oneway_threshold_best_hit(mode_):
             # User Selected  [1, 3, 5] is list of User input
             for k in USER_SELECTED_NUMBER:
                 # ! changed by Krish
+                # ! while can be used but create a infinity loop
                 if k < i:
                     continue
+                # nothing to do go to tp
                 else:
-                    print(b_info+" between %s genome and %s genome"
+                    print(info+" between %s genome and %s genome"
                           % (SELECTED_SPECIS_DIC[i], SELECTED_SPECIS_DIC[k]))
                     # this will Create a loop though 2 times
                     # length of Genome gene ID in Sequence File
@@ -510,10 +540,11 @@ def oneway_threshold_best_hit(mode_):
                         # "No Parallel Computing while cpu count == 1"
                         blastp_time_start = time.time()
                         run_parallel_query(i, k, query_v, cpu_count)
+                        # run_parallel_query doesnot return any value but it write
                         # i is first species k is second species
                         # number queryv is list file of i Position genome"
                         blastp_time_end = time.time()
-                        print(b_info + "took %.2f minutes" % (
+                        print(info + "took %.2f minutes" % (
                             (blastp_time_end-blastp_time_start)/60))
                     else:
                         # If the number of query_v_len is less than cpu_count,
@@ -536,7 +567,7 @@ def oneway_threshold_best_hit(mode_):
                             for n in process_list:
                                 n.join()
                             blastp_time_end = time.time()
-                            print(b_info+"took %.2f minutes " % (
+                            print(info+"took %.2f minutes " % (
                                 (blastp_time_end-blastp_time_start)/60))
                         else:
                             # "this wiil run if cpu_count is more than 1"
@@ -554,10 +585,10 @@ def oneway_threshold_best_hit(mode_):
                             for n in process_list:
                                 n.join()
                             blastp_time_end = time.time()
-                            print(b_info+"took %.2f minutes " % (
+                            print(info+"took %.2f minutes " % (
                                 (blastp_time_end-blastp_time_start)/60))
                 if not i == k:
-                    backward_best_hit_work_list_.append((i, k, query_v_len))
+                    bbh_work_list_.append((i, k, query_v_len))
                     print("Backward")
     elif "2" in mode_:
 
@@ -583,14 +614,14 @@ def oneway_threshold_best_hit(mode_):
                         continue
                     else:
                         # same as Mode_ 1, if Precalculated file doesnot exist
-                        # print(b_info+ " between %s genome and %s genome" % (
+                        # print(info+ " between %s genome and %s genome" % (
                         #    SELECTED_SPECIS_DIC[i], SELECTED_SPECIS_DIC[k]))
                         query_v_len = len(query_v)
                         if cpu_count == 1:
                             blastp_time_start = time.time()
                             run_parallel_query(i, k, query_v, cpu_count)
                             blastp_time_end = time.time()
-                            print(b_info + "took %.2f minutes" % (
+                            print(info + "took %.2f minutes" % (
                                 (blastp_time_end-blastp_time_start)/60))
                         else:
                             # If the number of query_v_len is less than cpu_count,
@@ -612,7 +643,7 @@ def oneway_threshold_best_hit(mode_):
                                 for n in process_list:
                                     n.join()
                                 blastp_time_end = time.time()
-                                print(b_info+" took %.2f minutes" % (
+                                print(info+" took %.2f minutes" % (
                                     (blastp_time_end-blastp_time_start)/60))
                             else:
                                 blastp_time_start = time.time()
@@ -630,14 +661,14 @@ def oneway_threshold_best_hit(mode_):
                                 for n in process_list:
                                     n.join()
                                 blastp_time_end = time.time()
-                                print(b_info + " took %.2f minutes" % (
+                                print(info + " took %.2f minutes" % (
                                     (blastp_time_end-blastp_time_start)/60))
                         new_calculated_data_list.append(
                             SELECTED_SPECIS_DIC[i]+"_"+SELECTED_SPECIS_DIC[k])
                         if not i == k:
-                            backward_best_hit_work_list_.append(
+                            bbh_work_list_.append(
                                 (i, k, query_v_len))
-    return backward_best_hit_work_list_
+    return bbh_work_list_
 
 
 def backward_best_hit(args):
@@ -778,25 +809,31 @@ def search_equal_bbh_data(target_a):
     # {"AAE_gi|15600000|ref|NP_213710.1":["AAE_gi|15600000|ref|NP_213710.1",0]}
     # equal_BBH_data_dic is a big dictionary file
 
-    put_data = equal_BBH_data_dic[target_a]
-    if put_data[1] != 0:
+    try:
+        put_data = equal_BBH_data_dic[target_a]
+        # ! if target_a not found in equal_BBH_data will not create error
+        # !!! returns value or default
+        if put_data[1] != 0:
         # ! code changed if error raise check with old
-        copy_put_data = copy.copy(put_data)
-        copy_put_data.insert(0, target_a)
-        results.put(copy_put_data)
-        equal_BBH_data_dic[target_a][1] = 0
-        # change the number value to 0
-        for i in second_equal_BBH_data:
-            # example of i
-            # ["AAE_gi|15606581|ref|NP_213505.1","AAE_gi|15606877|ref|NP_214257.1",898]
-            # ["AAE_gio|15606744|ref|NP_214124.1|","AAE_gi|15606128|ref|NP_213961.1",2170]
-            if i[2] != 0 and (i[0] == target_a or i[1] == target_a):
-                # !! code changed if error raise check with old
-                copy_second_put_data = copy.copy(i)
-                # Don't put results as queue.
-                # Because the tasks will put copy_second_put_data to results as queue.
-                tasks.put(copy_second_put_data)
-                i[2] = 0
+            copy_put_data = copy.copy(put_data)
+            copy_put_data.insert(0, target_a)
+            results.put(copy_put_data)
+            equal_BBH_data_dic[target_a][1] = 0
+            # change the number value to 0
+            for i in second_equal_BBH_data:
+                # example of i
+                # ["AAE_gi|15606581|ref|NP_213505.1","AAE_gi|15606877|ref|NP_214257.1",898]
+                # ["AAE_gio|15606744|ref|NP_214124.1|","AAE_gi|15606128|ref|NP_213961.1",2170]
+                if i[2] != 0 and (i[0] == target_a or i[1] == target_a):
+                    # !! code changed if error raise check with old
+                    copy_second_put_data = copy.copy(i)
+                    # Don't put results as queue.
+                    # Because the tasks will put copy_second_put_data to results as queue.
+                    tasks.put(copy_second_put_data)
+                    i[2] = 0
+    except KeyError as err:
+        print(err)
+    # if target_a not found will return None value so need to remove
 
 
 def search_unequal_bbh_data(target_b):
@@ -965,7 +1002,7 @@ def parallel_mcl(score_matrix):
 
 def mcl(score_matrix):
     """Input score_matrix is the user selected matrix llike BLOASUM45, BLOSUM62 or BLOSUM80"""
-    print("mcl funciton running")
+    #print("mcl funciton running")
     count = 0
     infinitesimal_value = 10**-10
     idempotent_matrix = numpy.matlib.ones((2, 2))
@@ -973,14 +1010,14 @@ def mcl(score_matrix):
     while idempotent_matrix.sum() > infinitesimal_value:  # > infinitesimal_value
         mcl_time_start = time.time()
         expansion_matrix = score_matrix ** 2
-        print("shape of input score_matrix", score_matrix.shape)
-        #print(expansion_matrix)
+        # print("shape of input score_matrix", score_matrix.shape)
+        # print(expansion_matrix)
 
         score_matrix = np.power(expansion_matrix, float(
             inflation_factor))  # !!! Eroor
         # print(score_matrix)
         score_matrix_sum = score_matrix.sum(axis=0)
-        print(score_matrix_sum,"line 983")
+        # print(score_matrix_sum,"line 983")
         # create a inflation_matrix
         score_matrix = np.divide(score_matrix, score_matrix_sum)
         # identify whether inflation_matrix is idempotent matrix or not.
@@ -1175,6 +1212,18 @@ def read_unequal_bbh(path):
             split_data[2] = int(split_data[2])
             unequal_BBH_data.append(split_data)
 
+def write_info():
+    """  #
+    with open("./function_samples/same_species_forward_best_hit(score_file).txt",'a+') as bp_score:
+        bp_score.write(str(species_of_query)+str(species_of_subject))
+        bp_score.write("\n\nTHis is Input file for same species_forward_best_hit()")
+        bp_score.write("\n")
+        bp_score.write(blastp_score)
+        bp_score.write("*"*20+"\n")
+        bp_score.write("This is same_species_forward_best_score\n")
+        bp_score.write("\n".join(str(x) for x in same_species_forward_best_score))
+        bp_score.write("\n"+"*"*20+"\n")
+    """
 
 print("="*82)
 print("||\t****Default Variables(Values)****\t\t\t\t\t||")
@@ -1214,6 +1263,8 @@ if not sys.argv[1:]:
     print("1. BLASTP. \n2. BLASTP using precalculated data. \n3. clustering.\n")
     MODE = input(">> Select a MODE or MODEs space seprater\n\
         (1 3 ***OR*** 2 3): ").split(" ")
+    check_mode(MODE) # ! if 1 or 2 is not Passed the system will exist
+    # ! Created by Krishna !!
     SELECTED_SPECIS_DIC, backward_selected_species_dic, number_i = read_species(
         1)  # read_species(1) will return dictionary type
     SELECTED_NUMBER = input(
@@ -1261,6 +1312,7 @@ elif sys.argv[1:]:
     USER_SELECTED_NUMBER = [backward_selected_species_dic[ele]
                             for ele in genomes]  # select by value of dictionary
     CLUSTER_OUT = COMMAND_OPTIONS.CLUSTER_OUT     # File Name to save
+    check_mode(MODE) # ! If 1 or 2 not Passed system will exist
 
 SPECIES = COMMAND_OPTIONS.SPECIES
 BLASTP = COMMAND_OPTIONS.BLASTP
@@ -1271,7 +1323,6 @@ threshold_score = COMMAND_OPTIONS.threshold_score
 verbose = COMMAND_OPTIONS.verbose
 infinite_loop = COMMAND_OPTIONS.infinite_loop
 log_time = datetime.datetime.now().strftime("_%Y_%m_%d_%H_%M_%S")
-
 
 # print(COMMAND_OPTIONS.SPECIES ,COMMAND_OPTIONS.Blastp ,COMMAND_OPTIONS.Score_file)
 
@@ -1287,7 +1338,7 @@ if "3" in MODE:
     # no need to run cluster again
 
 # del_file(Score_file, "*")
-# # this Function will delete all files inside currently folder
+# this Function will delete all files inside currently folder
 
 if "3" in MODE:
     # for log file location
@@ -1321,13 +1372,17 @@ with open(Log_file_name, 'w') as log:
 
 start_time_OBH = time.time()
 if "1" in MODE:    # 1 is for Blastp Run
-    backward_best_hit_work_list = oneway_threshold_best_hit(MODE)
-    # print("Back Ward Best Hit result", backward_best_hit_work_list)
-    pool = multiprocessing.Pool(cpu_count)
-    results = pool.map(backward_best_hit, backward_best_hit_work_list)
-    # "function_name is backward_best_hit and the parameter is backward_best_hit_work_list"
-    pool.close()
-    pool.join()
+    bbh_work_list = oneway_threshold_best_hit(MODE)
+    # backward _best_hit_work_list is changed to bbh_ work_list
+    # print("Back Ward Best Hit result", bbh_work_list)
+    if bbh_work_list !=[]:
+        pool = multiprocessing.Pool(cpu_count)
+        results = pool.map(backward_best_hit, bbh_work_list)
+        # "function_name is backward_best_hit and the parameter is bbh_work_list"
+        pool.close()
+        pool.join()
+    else:
+        results = [0,0]
 
 elif "2" in MODE:
     used_precalculated_data_list = []
@@ -1338,16 +1393,16 @@ elif "2" in MODE:
     # _S changed to Score file name and copy score file
     # from score_file to blastp_file folder manually to speed up the system
     # glob.glob function may not work properly in windows so  need to check the  result
-    backward_best_hit_work_list = oneway_threshold_best_hit(MODE)
+    bbh_work_list = oneway_threshold_best_hit(MODE)
     # This function also add elements to used_precalculated_data_list
-    # If backward_best_hit_work_list is an empty list, pool instance can't finsh the work.
-    if backward_best_hit_work_list != []:
-        # If backward_best_hit_work_list is an empty list, pool instance can't finsh the work.
+    # If bbh_work_list is an empty list, pool instance can't finsh the work.
+    if bbh_work_list != []:
+        # If bbh_work_list is an empty list, pool instance can't finsh the work.
         # "The pool only run if backward best_hit_work_list has some value."
         pool = multiprocessing.Pool(cpu_count)
         # multiprocessing.pool() for Parallel
-        results = pool.map(backward_best_hit, backward_best_hit_work_list)
-        # backward_best_hit is the function and backward_best_hit_work_list is list parameter
+        results = pool.map(backward_best_hit, bbh_work_list)
+        # backward_best_hit is the function and bbh_work_list is list parameter
         pool.close()
         pool.join()
     else:

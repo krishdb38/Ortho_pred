@@ -1,0 +1,17 @@
+2020-04-10 15:26:02.406346
+MODE : 1 3
+genomes : TMA YPE 
+cpu_count : 12
+blastp matrix : BLOSUM45
+inflation_factor : 1.5
+Cluster out : result
+SPECIES : ./species/
+BLASTP : blastp
+Score file : ./score_file/
+BLASTP_DATA : ./blastp_data/
+save rawblastp score : True
+backward_best_hit took 0.02063318093617757minutes
+BLASTP + Best_Hit + backward_best_hit searches took 1.5388432423273721 minutes
+Ortholog count : 6, Cluster count : 2
+mcl algorithm and Ortholog clustering took 0.002230517069498698 minutes
+XXX program took 1.541141963005066minutes
