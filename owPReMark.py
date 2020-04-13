@@ -445,9 +445,9 @@ def run_parallel_query(species_of_query, species_of_subject, query_v, parallel_n
                                     save_best_score)
                         else:  # ex) [A1 of AAE, A2 of AAE, 30]
                             with open(Score_file+SELECTED_SPECIS_DIC[species_of_query]\
-                                      +"_"
-                                      + SELECTED_SPECIS_DIC[species_of_subject]
-                                      + "_second_oneway_threshold_best_hit_Score"
+                                      +"_"\
+                                      + SELECTED_SPECIS_DIC[species_of_subject]\
+                                      + "_second_oneway_threshold_best_hit_Score"\
                                       + str(threshold_score), "a") as second_oneway_threshold_bh:
                                       # best_hit is renamed with bh
                                 second_save_best_score = SELECTED_SPECIS_DIC[species_of_query]\
@@ -697,7 +697,8 @@ def backward_best_hit(args):
             with open(Score_file+SELECTED_SPECIS_DIC[species_of_query]+"_"
                       + SELECTED_SPECIS_DIC[species_of_subject]\
                       + "_"+"best_score_S"\
-                      + str(threshold_score)+"_"+str(parallel_num), "r") as best_hit_score:
+                      + str(threshold_score)\
+                      +"_"+str(parallel_num), "r") as best_hit_score:
                     # AAE_gi|15605613|ref|NP_212986.1| ECO_gi|170082858|ref|YP_001732178.1| 3020 703
                     # AAE_gi|15605614|ref|NP_212987.1| ECO_gi|170083440|ref|YP_001732760.1| 1990 404
                     # sample of best_hit_score File
