@@ -8,8 +8,8 @@ window = tk.Tk()
 #window.geometry("500x500")
 
 # Window logo in the top
-photo = tk.PhotoImage(file = "./GUI_TK/icons/python2.png")
-window.tk.call("wm","iconphoto",window._w,photo)
+#photo = tk.PhotoImage(file = "./GUI_TK/icons/python2.png")
+#window.tk.call("wm","iconphoto",window._w,photo)
 window.title("owPReMark, Software to detect Orthologes among Genomes")
 
 # !! ____________________Buttot_______________________________
