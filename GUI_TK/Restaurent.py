@@ -12,10 +12,6 @@ import time;
 window=Tk()
 window.geometry("1600x800+0+0")
 window.title("Restaurent Management System")
-
-text_input=StringVar()
-operator=""
-
 Tops=Frame(window,width=1600,height=50,bg="powder blue")
 Tops.pack(side=TOP)
 
