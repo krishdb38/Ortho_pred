@@ -15,9 +15,9 @@ window.title("owPReMark_Orthologs_Detection_Software")
 window.geometry("1000x800")
 window.resizable(0,0)
 
-photo = tk.PhotoImage(file = "./GUI_TK/icons/python2.png")
-window.tk.call("wm","iconphoto",window._w,photo)
-window.title("owPReMark, Software to detect Orthologes among Genomes")
+photo = tk.PhotoImage(file = "./icons/python2.png")
+#window.tk.call("wm","iconphoto",window._w,photo)
+#window.title("owPReMark, Software to detect Orthologes among Genomes")
 
 # !! ______________Defined_global_variables_Here_______________
 ## Lines
@@ -30,7 +30,7 @@ f1.pack(side = "bottom")
 
 # !!!  XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 # Frame 2 for extra Features
-f2 = tk.Frame(window,width = 500,height = 200,bg= "red").place(x=490,y=510)
+f2 = tk.Frame(window,width = 500,height = 200,bg= "red",bd =15,).place(x=490,y=510)
 f3 = tk.Frame(window,width = 500,height = 350,bg= "green").place(x=490,y=180)
 
 # !!!!  XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -134,6 +134,7 @@ tk.Label(window,text = "less than"+str(os.cpu_count()),font=('arial',12,"bold"),
 
 clustering_entry = tk.Entry(window,bd =5).place(x=300,y=400)
 
+
 # !!__________________________Browse_Button__________________________________________
 species_folder = tk.StringVar()
 blastp_folder = tk.StringVar()
@@ -154,6 +155,13 @@ tk.Button(text="blastp_file",command =lambda: browse_button(blastp_folder)).plac
 
 
 
+## !! _____________________Display input_parameter inside frame 3 with button
+def display(input):
+    pass
+
+show_variable = tk.Button(f3,text = "show_variable").pack(side = "left")
+
+
 # !!___________________________________Radio_Button_for Matrix_selection_________________________________
 v = tk.StringVar()
 
@@ -166,5 +174,6 @@ tk.Radiobutton(window,text = "BLOSUM62",variable = v,value="BLOSUM62",command = 
 tk.Radiobutton(window,text = "BLOSUM82",variable = v,value="BLOSUM82",command = show_choice,font=('arial',10,"bold")).place(x=240,y=650)
 
 window.mainloop()
+
 if __name__ == '__main__':
-    main()
+    pass

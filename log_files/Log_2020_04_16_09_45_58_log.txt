@@ -1,0 +1,10 @@
+2020-04-16 09:45:58.039901
+MODE : 1
+genomes : AAE CAC 
+cpu_count : 10
+blastp matrix : BLOSUM45
+SPECIES : ./species/
+BLASTP : blastp
+Score file : ./score_file/
+BP_FOLDER : ./blastp_data/
+save rawblastp score : True

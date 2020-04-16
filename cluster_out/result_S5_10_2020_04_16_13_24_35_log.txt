@@ -1,0 +1,17 @@
+2020-04-16 13:24:44.467821
+MODE : 1 3
+genomes : AAE CAC 
+cpu_count : 10
+blastp matrix : BLOSUM45
+inflation_factor : 10
+Cluster out : result
+SPECIES : ./species/
+BLASTP : blastp
+Score file : ./score_file/
+BP_FOLDER : ./blastp_data/
+save rawblastp score : True
+backward_best_hit took 0.029119336605072023minutes
+BLASTP + Best_Hit + backward_best_hit searches took 1.4266965786616008 minutes
+Ortholog count : 0, Cluster count : 0
+mcl algorithm and Ortholog clustering took 0.002128132184346517 minutes
+XXX program took 1.428896156946818minutes

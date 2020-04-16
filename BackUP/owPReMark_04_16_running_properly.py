@@ -78,7 +78,7 @@ PARSER.add_argument('-c', '--cpu',
 BLASTP_GROUP.add_argument('+r',
                           action='store_true',
                           default=True,  # Default was false
-                          dest='save_raw_bpscore',
+                          dest='save_raw_blastp_score',
                           help='Save the raw score of blastp to\
                             the score_file dirctory.')
 BLASTP_GROUP.add_argument('-t', '--threshold',
@@ -122,7 +122,7 @@ BLASTP_GROUP.add_argument('-F', '--scorefile',
 BLASTP_GROUP.add_argument('-B', '--blastp_data',
                           action='store',
                           default='./blastp_data/',
-                          dest='BP_FOLDER',
+                          dest='BLASTP_DATA',
                           help='set the path of precalculated blastp data.\
                               The default path is "./blastp_data/".')
 MCL_GROUP.add_argument('-i', '--IF',
@@ -265,27 +265,27 @@ def run_blast(subject, parallel_num):
     return run_blastp.stdout
 
 
-def same_species_fbh(bpscore):
+def same_species_forward_best_hit(blastp_score):
     """Search the forward best hit among the blastp scores of
     same species.Because there are duplicated genes in a same genome.
     blstp_score file is return value of run_blast() Function
     When the blastp score compare with blastp score of duplicate gene,
     if score and length are same,
     blasp score of duplicated gene is added to a second best score."""
-    # print(bpscore)
-    bpscore_split_list = []
+    # print(blastp_score)
+    blastp_score_split_list = []
     temp_best_score = ['-1', '-1', '-1']
     second_temp_best_score = []
     best_score = []
     second_best_score = []
-    bpscore_split = bpscore.split("\n")
+    blastp_score_split = blastp_score.split("\n")
     # delete of [''] in the last index  ex) ['gi,gi,1,1','gi,gi,2,2','']
-    del bpscore_split[-1]
-    for _ in bpscore_split:
-        bpscore_element = _.split(',')
-        bpscore_split_list.append(bpscore_element)
+    del blastp_score_split[-1]
+    for _ in blastp_score_split:
+        blastp_score_element = _.split(',')
+        blastp_score_split_list.append(blastp_score_element)
     # ex) k is ['gi|15605613|ref|NP_212986.1|', 'gi|15605613|ref|NP_212986.1|', '3702', '699']
-    for k in bpscore_split_list:
+    for k in blastp_score_split_list:
         # print(len(k)) ==4
         # example of k is
         # ["gi|15605616|ref|NP_212989.1","gi|15606180|ref|NP_213700.1","58","30"]
@@ -325,22 +325,22 @@ def same_species_fbh(bpscore):
     return best_score
 
 
-def fbh(bpscore):
+def forward_best_hit(blastp_score):
     """Search the forward best hit among the blastp scores of same species."""
     #  print("Rnunning GetForward BestHit")
-    bpscore_split_list = []
+    blastp_score_split_list = []
     temp_best_score = ['-1', '-1', '-1']
     second_temp_best_score = []
     best_score = []
-    bpscore_split = bpscore.split("\n")
+    blastp_score_split = blastp_score.split("\n")
     # delete of ['']   ex) ['gi,gi,1,1','gi,gi,2,2','']
-    del bpscore_split[-1]
-    for _ in bpscore_split:
-        bpscore_element = _.split(',')
-        bpscore_split_list.append(bpscore_element)
-    for k in bpscore_split_list:
+    del blastp_score_split[-1]
+    for _ in blastp_score_split:
+        blastp_score_element = _.split(',')
+        blastp_score_split_list.append(blastp_score_element)
+    for k in blastp_score_split_list:
         # ex) k is ['gi|15605613|ref|NP_212986.1|', 'gi|15605613|ref|NP_212986.1|', '3702', '699']
-        # print ">>>>>>>>>>>>>>>fbh   k", k
+        # print ">>>>>>>>>>>>>>>forward_best_hit   k", k
         if int(k[2]) > int(temp_best_score[2]):  # Compare the Score of the Blast
             temp_best_score = k
         elif int(k[2]) == int(temp_best_score[2]):
@@ -352,7 +352,7 @@ def fbh(bpscore):
     for j in second_temp_best_score:
         if (j[2] == temp_best_score[2]) and (j[3] == temp_best_score[3]):
             best_score.append(j)
-    return best_score, bpscore_split_list
+    return best_score, blastp_score_split_list
 
 
 def division_parallel_query(query_v, query_division_value, cpu_count_, query_v_len):
@@ -396,14 +396,14 @@ def run_parallel_query(species_of_query, species_of_subject, query_v, parallel_n
     run_parallel_query(i ,k , query_v , cpu_count)
     i and k are user selected number in a list Format
     Run the following functions. write_query, run_blast,
-    same_species_fbh, forward best hit
+    same_species_forward_best_hit, forward_best_hit
     Save the files which are oneway_ threshold_best_hit,
     second_oneway _threshold_best_hit,
-    bpscore_split_list and raw_bpscore(optional) by each species.
+    blastp_score_split_list and raw_blastp_score(optional) by each species.
     parallel_num is the Number of CPU selected by the user if CPu 1 selected then 1
-    # ! query_v = query_sequence(SELECTED_SPECIS[i])
+    # ! query_v = query_sequence(SELECTED_SPECIS_DIC[i])
     """
-    # ! query_v ! = query_sequence(SELECTED_SPECIS[species_of_query]) why ??
+    # ! query_v ! = query_sequence(SELECTED_SPECIS_DIC[species_of_query]) why ??
     with alive_bar(len(query_v)) as bar_:
         # declare your set of items for loop, bar is blacklisted
         for j in query_v:
@@ -411,99 +411,99 @@ def run_parallel_query(species_of_query, species_of_subject, query_v, parallel_n
             write_query(j, parallel_num)
             # if 1 Added Here Add also to Run
         # This Function Only Write a file with j name and parallel_num i.e CPU Count
-            bpscore = run_blast(
-                SELECTED_SPECIS[species_of_subject], parallel_num)
+            blastp_score = run_blast(
+                SELECTED_SPECIS_DIC[species_of_subject], parallel_num)
         # Return Byte File type, and this is only for one gene position query and Whole Genome
-            if bpscore != '':  # if blastp run successfully
-                best_score, bpscore_split_list = fbh(
-                    bpscore)  # .decode() Convert in to str format
+            if blastp_score != '':  # if blastp run successfully
+                best_score, blastp_score_split_list = forward_best_hit(
+                    blastp_score)  # .decode() Convert in to str format
                 # ex) AAE == AAE. It will save best_score without reversing run_blast.
-                # The sample for bpscore and bpscore_split_list is saved inside folder
+                # The sample for blastp_score and blastp_score_split_list is saved inside folder
 
                 if species_of_query == species_of_subject:
-                    same_species_forward_best_score = same_species_fbh(
-                        bpscore)  # .decode()
+                    same_species_forward_best_score = same_species_forward_best_hit(
+                        blastp_score)  # .decode()
                     for best_score_element in same_species_forward_best_score:
                         # ex) [A1 of AAE, A1 of AAE, 30]
                         if best_score_element[0] == best_score_element[1]:
                             # if same species add write file in # !!!
-                            with open(Score_file+SELECTED_SPECIS[species_of_query]\
-                                + "_" +SELECTED_SPECIS[species_of_subject]\
+                            with open(Score_file+SELECTED_SPECIS_DIC[species_of_query]\
+                                + "_" +SELECTED_SPECIS_DIC[species_of_subject]\
                                 + "_oneway_tbh_Score"\
-                                + str(threshold_score), "a") as oneway_tbh:
+                                + str(threshold_score), "a") as oneway_threshold_bh:
                                 # best_hit is replaced with h
-                                save_best_score = SELECTED_SPECIS[species_of_query]\
+                                save_best_score = SELECTED_SPECIS_DIC[species_of_query]\
                                     + "_" + best_score_element[0]\
                                     .split(r"\s")[0]\
                                     + " "\
-                                    + SELECTED_SPECIS[species_of_subject]\
+                                    + SELECTED_SPECIS_DIC[species_of_subject]\
                                     + "_"+best_score_element[1]\
                                     .split(r"\s")[0]+" " + best_score_element[2]+"\n"
                                 # best_score_element[0].split("|")
                                 # ==> ['gi','15642790', 'ref', 'NP_227831.1', '']
-                                oneway_tbh.write(
+                                oneway_threshold_bh.write(
                                     save_best_score)
                         else:  # ex) [A1 of AAE, A2 of AAE, 30]
-                            with open(Score_file+SELECTED_SPECIS[species_of_query]\
+                            with open(Score_file+SELECTED_SPECIS_DIC[species_of_query]\
                                       +"_"\
-                                      + SELECTED_SPECIS[species_of_subject]\
+                                      + SELECTED_SPECIS_DIC[species_of_subject]\
                                       + "_second_oneway_tbh_Score"\
-                                      + str(threshold_score), "a") as second_oneway_tbh:
+                                      + str(threshold_score), "a") as second_oneway_threshold_bh:
                                       # best_hit is renamed with bh
-                                second_save_best_score = SELECTED_SPECIS[species_of_query]\
+                                second_save_best_score = SELECTED_SPECIS_DIC[species_of_query]\
                                     + "_"+best_score_element[0].split(r"\s")[0]\
-                                    + " "+SELECTED_SPECIS[species_of_subject]\
+                                    + " "+SELECTED_SPECIS_DIC[species_of_subject]\
                                     + "_" + best_score_element[1].split(r"\s")[0]\
                                     + " "+best_score_element[2]+"\n"
-                                second_oneway_tbh.write(
+                                second_oneway_threshold_bh.write(
                                     second_save_best_score)
                 else:
                     # If species_of_query not equal with species_of_subject, run reversing run_blast
                     for best_score_element in best_score:
                         if '-1' not in best_score_element:   # ! if not "-1" in best_score_element:
-                            with open(Score_file+SELECTED_SPECIS[species_of_query]\
+                            with open(Score_file+SELECTED_SPECIS_DIC[species_of_query]\
                                     + "_"\
-                                    + SELECTED_SPECIS[species_of_subject]\
+                                    + SELECTED_SPECIS_DIC[species_of_subject]\
                                     + "_"+"best_score_S"\
                                     + str(threshold_score)\
                                     +"_"\
                                     +str(parallel_num), "a") as save_best_hit:
-                                best_score_save = SELECTED_SPECIS[species_of_query]\
+                                best_score_save = SELECTED_SPECIS_DIC[species_of_query]\
                                     + "_"\
                                     + best_score_element[0].split(r"\s")[0]\
-                                    + " "+SELECTED_SPECIS[species_of_subject]\
+                                    + " "+SELECTED_SPECIS_DIC[species_of_subject]\
                                     + "_"+best_score_element[1].split(
                                         r"\s")[0]\
                                     + " " + best_score_element[2]\
                                     + " " + best_score_element[3]+"\n"
                                 save_best_hit.write(best_score_save)
 
-                    for bpscore_split_list_element in bpscore_split_list:
-                        with open(Score_file+SELECTED_SPECIS[species_of_query]+"_"
-                                  + SELECTED_SPECIS[species_of_subject]
-                                  + "_"+"bpscore_split_list_S"
+                    for blastp_score_split_list_element in blastp_score_split_list:
+                        with open(Score_file+SELECTED_SPECIS_DIC[species_of_query]+"_"
+                                  + SELECTED_SPECIS_DIC[species_of_subject]
+                                  + "_"+"blastp_score_split_list_S"
                                   + str(threshold_score)
-                                  + "_"+str(parallel_num), "a") as save_bpscore_split_list:
+                                  + "_"+str(parallel_num), "a") as save_blastp_score_split_list:
 
-                            bpscore_split_list_save = SELECTED_SPECIS[species_of_query]\
+                            blastp_score_split_list_save = SELECTED_SPECIS_DIC[species_of_query]\
                                     + "_"\
-                                    + bpscore_split_list_element[0].split(\
+                                    + blastp_score_split_list_element[0].split(\
                                         r"\s")[0]\
-                                    + " "+SELECTED_SPECIS[species_of_subject]\
-                                    + "_"+bpscore_split_list_element[1].split(r"\s")[0]\
-                                    + " " + bpscore_split_list_element[2]\
-                                    +" " + bpscore_split_list_element[3]+"\n"
-                            save_bpscore_split_list.write(
-                                bpscore_split_list_save)
+                                    + " "+SELECTED_SPECIS_DIC[species_of_subject]\
+                                    + "_"+blastp_score_split_list_element[1].split(r"\s")[0]\
+                                    + " " + blastp_score_split_list_element[2]\
+                                    +" " + blastp_score_split_list_element[3]+"\n"
+                            save_blastp_score_split_list.write(
+                                blastp_score_split_list_save)
             else:
                 print("--------")
             bar_()  # Call after Consuming One Item
-            if save_raw_bpscore:
-                with open(Score_file+SELECTED_SPECIS[species_of_query]
-                          + "_"+SELECTED_SPECIS[species_of_subject]+"_S"
+            if save_raw_blastp_score:
+                with open(Score_file+SELECTED_SPECIS_DIC[species_of_query]
+                          + "_"+SELECTED_SPECIS_DIC[species_of_subject]+"_S"
                           + str(threshold_score)+"_"+str(parallel_num), "a") as save_blastp:
                     # Only string is format is supported
-                    save_blastp.write(bpscore)  # .decode()
+                    save_blastp.write(blastp_score)  # .decode()
     # bar.finish() # progressing bar finish
 
 
@@ -521,7 +521,7 @@ def oneway_tbh(mode_):
         # Mode 2 is for BLASTP using precalcualted data and
         # Mode 3 is for clustering"""
         for i in USER_SELECTED_NUMBER:  # Select species to write query
-            query_v = query_sequence(SELECTED_SPECIS[i])
+            query_v = query_sequence(SELECTED_SPECIS_DIC[i])
             # query_v is a list Format  with a position gene id , Seq
             # User Selected  [1, 3, 5] is list of User input
             for k in USER_SELECTED_NUMBER:
@@ -532,7 +532,7 @@ def oneway_tbh(mode_):
                 # nothing to do go to tp
                 else:
                     print(info+" between %s genome and %s genome"
-                          % (SELECTED_SPECIS[i], SELECTED_SPECIS[k]))
+                          % (SELECTED_SPECIS_DIC[i], SELECTED_SPECIS_DIC[k]))
                     # this will Create a loop though 2 times
                     # length of Genome gene ID in Sequence File
                     query_v_len = len(query_v)
@@ -598,14 +598,14 @@ def oneway_tbh(mode_):
         # print(len(precalculated_data_list),"oneway_tbh_ files are located")
         # # !!! Delete This row later
         for i in USER_SELECTED_NUMBER:  # Select species to write query
-            query_v = query_sequence(SELECTED_SPECIS[i])
+            query_v = query_sequence(SELECTED_SPECIS_DIC[i])
             for k in USER_SELECTED_NUMBER:  # Select of subject
-                if BP_FOLDER+SELECTED_SPECIS[i]+"_"+SELECTED_SPECIS[k]\
+                if BLASTP_DATA+SELECTED_SPECIS_DIC[i]+"_"+SELECTED_SPECIS_DIC[k]\
                     + "_oneway_tbh_Score"\
                         + str(threshold_score) in precalculated_data_list:
                     print("Skipped")
                     used_precalculated_data_list.append(
-                        SELECTED_SPECIS[i]+"_"+SELECTED_SPECIS[k])
+                        SELECTED_SPECIS_DIC[i]+"_"+SELECTED_SPECIS_DIC[k])
                     # used_precalcualted _data_list is created before calling this function
                     # if files exist then passed
                     # continue  # File will skkipped # !! Removed
@@ -615,7 +615,7 @@ def oneway_tbh(mode_):
                     else:
                         # same as Mode_ 1, if Precalculated file doesnot exist
                         # print(info+ " between %s genome and %s genome" % (
-                        #    SELECTED_SPECIS[i], SELECTED_SPECIS[k]))
+                        #    SELECTED_SPECIS_DIC[i], SELECTED_SPECIS_DIC[k]))
                         query_v_len = len(query_v)
                         if cpu_count == 1:
                             blastp_time_start = time.time()
@@ -664,7 +664,7 @@ def oneway_tbh(mode_):
                                 print(info + " took %.2f minutes" % (
                                     (blastp_time_end-blastp_time_start)/60))
                         new_calculated_data_list.append(
-                            SELECTED_SPECIS[i]+"_"+SELECTED_SPECIS[k])
+                            SELECTED_SPECIS_DIC[i]+"_"+SELECTED_SPECIS_DIC[k])
                         if not i == k:
                             bbh_work_list_.append(
                                 (i, k, query_v_len))
@@ -675,27 +675,27 @@ def backward_best_hit(args):
     """ This will  calculate backward_best_hit with
     This function open 2 files from score_files folder
     Genome_genome_best_score_S_5_parallel_num and
-    Genome_Genome_bpscore_split_list_S_5_parallel_num
+    Genome_Genome_blastp_score_split_list_S_5_parallel_num
     and convert last 2 digits to integer values.
     and again loopdone in
-    fbh_score_list and
-    bpscore_split_list
+    forward_best_hit_score_list and
+    blastp_score_split_list
 
     """
     bck_info = "Running the backward_best_hit"
     # print(bck_info)
     species_of_query, species_of_subject, query_v_len = args
     start_time_bbh = time.time()
-    fbh_score_list = []
-    bpscore_split_list = []
+    forward_best_hit_score_list = []
+    blastp_score_split_list = []
     print(bck_info + " between %s genome %s genome" % (
-        SELECTED_SPECIS[species_of_query], SELECTED_SPECIS[species_of_subject]))
+        SELECTED_SPECIS_DIC[species_of_query], SELECTED_SPECIS_DIC[species_of_subject]))
     # If the number of query_v_len is less than cpu_count, the cpu_count is changed to query_v_len.
     if query_v_len < cpu_count:
         for parallel_num in range(query_v_len):
             parallel_num += 1
-            with open(Score_file+SELECTED_SPECIS[species_of_query]+"_"
-                      + SELECTED_SPECIS[species_of_subject]\
+            with open(Score_file+SELECTED_SPECIS_DIC[species_of_query]+"_"
+                      + SELECTED_SPECIS_DIC[species_of_subject]\
                       + "_"+"best_score_S"\
                       + str(threshold_score)\
                       +"_"+str(parallel_num), "r") as best_hit_score:
@@ -709,20 +709,20 @@ def backward_best_hit(args):
 
                     split_each_line[2] = int(split_each_line[2])
                     split_each_line[3] = int(split_each_line[3])
-                    fbh_score_list.append(split_each_line)
+                    forward_best_hit_score_list.append(split_each_line)
 
             # convert the blastp result score length and score to integer format
-            with open(Score_file+SELECTED_SPECIS[species_of_query]+"_"
-                      + SELECTED_SPECIS[species_of_subject] +
-                      "_"+"bpscore_split_list_S"
-                      + str(threshold_score)+"_"+str(parallel_num), 'r') as bpscore:
+            with open(Score_file+SELECTED_SPECIS_DIC[species_of_query]+"_"
+                      + SELECTED_SPECIS_DIC[species_of_subject] +
+                      "_"+"blastp_score_split_list_S"
+                      + str(threshold_score)+"_"+str(parallel_num), 'r') as blastp_score:
                     # AAE_gi|15605613|ref|NP_212986.1| CAC_gi|15004754|ref|NP_149214.1| 80 55
                     # AAE_gi|15605613|ref|NP_212986.1| CAC_gi|15004707|ref|NP_149167.1| 69 14
-                for each_line in bpscore:
+                for each_line in blastp_score:
                     split_each_line = each_line.split(" ")
                     split_each_line[2] = int(split_each_line[2])
                     split_each_line[3] = int(split_each_line[3])
-                    bpscore_split_list.append(split_each_line)
+                    blastp_score_split_list.append(split_each_line)
 
     else:
         # if cpu length is smaller than queryV length
@@ -730,68 +730,68 @@ def backward_best_hit(args):
             # cpu_count is the number of cpu used by the user
             # ! Error may raise if parallel Num is not in the file
             parallel_num += 1
-            with open(Score_file+SELECTED_SPECIS[species_of_query]+"_"
-                      + SELECTED_SPECIS[species_of_subject]+"_"+"best_score_S"
+            with open(Score_file+SELECTED_SPECIS_DIC[species_of_query]+"_"
+                      + SELECTED_SPECIS_DIC[species_of_subject]+"_"+"best_score_S"
                       + str(threshold_score)+"_"+str(parallel_num), "r") as best_hit_score:
                 for each_line in best_hit_score:
                     split_each_line = each_line.split(" ")
                     split_each_line[3] = int(split_each_line[3])
-                    fbh_score_list.append(split_each_line)
-            with open(Score_file+SELECTED_SPECIS[species_of_query] + "_"
-                      + SELECTED_SPECIS[species_of_subject]
-                      + "_"+"bpscore_split_list_S"
-                      + str(threshold_score)+"_"+str(parallel_num), 'r') as bpscore:
-                for each_line in bpscore:
+                    forward_best_hit_score_list.append(split_each_line)
+            with open(Score_file+SELECTED_SPECIS_DIC[species_of_query] + "_"
+                      + SELECTED_SPECIS_DIC[species_of_subject]
+                      + "_"+"blastp_score_split_list_S"
+                      + str(threshold_score)+"_"+str(parallel_num), 'r') as blastp_score:
+                for each_line in blastp_score:
                     split_each_line = each_line.split(" ")
                     split_each_line[2] = int(split_each_line[2])
                     split_each_line[3] = int(split_each_line[3])
-                    bpscore_split_list.append(split_each_line)
+                    blastp_score_split_list.append(split_each_line)
 
-    # "bar = Bar("Searching : "+SELECTED_SPECIS[species_of_query]
-    # +"-"+SELECTED_SPECIS[species_of_subject], max = len(fbh_score_list)) ""
+    # "bar = Bar("Searching : "+SELECTED_SPECIS_DIC[species_of_query]
+    # +"-"+SELECTED_SPECIS_DIC[species_of_subject], max = len(forward_best_hit_score_list)) ""
 
-    for fbh_score_element in fbh_score_list:
+    for forward_best_hit_score_element in forward_best_hit_score_list:
         matching_list = []
         backward_best_score = ['-1', '-1', '-1']
         # length is 3 bcz the length is 3 in
-        # example of bpscore_split_list
+        # example of blastp_score_split_list
         # [AAE_gi|15605613|ref|NP_212986.1| ECO_gi|170082858|ref|YP_001732178.1| 3020 703,
         # AAE_gi|15605614|ref|NP_212987.1| ECO_gi|170083440|ref|YP_001732760.1| 1990 404 ]
-        # botth bpscore_split_list and fbh_score_list shape are almost same
-        # for element in bpscore_split_list:
-        #    if element[1] == fbh_score_element[1]:
+        # botth blastp_score_split_list and forward_best_hit_score_list shape are almost same
+        # for element in blastp_score_split_list:
+        #    if element[1] == forward_best_hit_score_element[1]:
         #        matching_list.append(element)
         # ! The upper 3 for loop be converted list Comprehensive
-        matching_list = [element for element in bpscore_split_list\
-            if element[1]== fbh_score_element[1]]
+        matching_list = [element for element in blastp_score_split_list\
+            if element[1]== forward_best_hit_score_element[1]]
 
         for element in matching_list:
             if int(element[2]) > int(backward_best_score[2]):
                 backward_best_score = element
     # !! Future Purpose
-    #        with open('./'+SELECTED_SPECIS[species_of_query]\
-    # +"_"+SELECTED_SPECIS[species_of_subject]+'_subtraction
+    #        with open('./'+SELECTED_SPECIS_DIC[species_of_query]\
+    # +"_"+SELECTED_SPECIS_DIC[species_of_subject]+'_subtraction
     # '+"_"+str(threshold_score), 'a') as subtraction :
-    #            save_data = int(backward_best_score[2]) - int(fbh_score_element[2])
+    #            save_data = int(backward_best_score[2]) - int(forward_best_hit_score_element[2])
     #            subtraction.write(str(save_data)+"\n")
 
-        if int(backward_best_score[2]) - int(fbh_score_element[2]) <= threshold_score:
+        if int(backward_best_score[2]) - int(forward_best_hit_score_element[2]) <= threshold_score:
             # the default threshold_score passed is 5
-            with open(Score_file+SELECTED_SPECIS[species_of_query]\
-                      + "_"+SELECTED_SPECIS[species_of_subject]\
+            with open(Score_file+SELECTED_SPECIS_DIC[species_of_query]\
+                      + "_"+SELECTED_SPECIS_DIC[species_of_subject]\
                       + "_oneway_tbh_Score"+str(threshold_score), "a")\
                     as other_oneway_tbh:
-                save_data = fbh_score_element[0]\
-                    + " "+fbh_score_element[1]\
-                    + " " + str(int(fbh_score_element[2]))+"\n"
+                save_data = forward_best_hit_score_element[0]\
+                    + " "+forward_best_hit_score_element[1]\
+                    + " " + str(int(forward_best_hit_score_element[2]))+"\n"
                 other_oneway_tbh.write(save_data)
 
     # bar.finish()
     finish_time_bbh = time.time()
     rbh_time = float((finish_time_bbh - start_time_bbh)/60)
     print(bck_info + " %s-%s took %.2f minutes" %
-          (SELECTED_SPECIS[species_of_query],\
-              SELECTED_SPECIS[species_of_subject], rbh_time))
+          (SELECTED_SPECIS_DIC[species_of_query],\
+              SELECTED_SPECIS_DIC[species_of_subject], rbh_time))
     return rbh_time
 
 
@@ -1215,11 +1215,11 @@ def read_unequal_bbh(path):
 
 def write_info():
     """  #
-    with open("./function_samples/same_species_fbh(score_file).txt",'a+') as bp_score:
+    with open("./function_samples/same_species_forward_best_hit(score_file).txt",'a+') as bp_score:
         bp_score.write(str(species_of_query)+str(species_of_subject))
-        bp_score.write("\n\nTHis is Input file for same species_fbh()")
+        bp_score.write("\n\nTHis is Input file for same species_forward_best_hit()")
         bp_score.write("\n")
-        bp_score.write(blastp_ score)
+        bp_score.write(blastp_score)
         bp_score.write("*"*20+"\n")
         bp_score.write("This is same_species_forward_best_score\n")
         bp_score.write("\n".join(str(x) for x in same_species_forward_best_score))
@@ -1229,8 +1229,8 @@ def write_info():
 print("="*82)
 print("||\t****Default Variables(Values)****\t\t\t\t\t||")
 print("||\tBlastp                 = %s\t\t\t\t\t\t||" % COMMAND_OPTIONS.BLASTP)
-print("||\tBP_FOLDER            = %s\t\t\t\t\t||" %
-      COMMAND_OPTIONS.BP_FOLDER)
+print("||\tBLASTP_DATA            = %s\t\t\t\t\t||" %
+      COMMAND_OPTIONS.BLASTP_DATA)
 print("||\tblstp_matrix           = %s\t\t\t\t\t||" %
       COMMAND_OPTIONS.blastp_matrix)
 print("||\tcpu_count              = %s\t\t\t\t\t\t||" %
@@ -1246,8 +1246,8 @@ print("||\tCLUSTER_OUT            = %s\t\t\t\t\t||" %
       COMMAND_OPTIONS.CLUSTER_OUT)
 print("||\tthreshold_score        = %s\t\t\t\t\t\t||" %
       COMMAND_OPTIONS.threshold_score)
-print("||\tsave_raw_bpscore  = %s\t\t\t\t\t\t||" %
-      COMMAND_OPTIONS.save_raw_bpscore)
+print("||\tsave_raw_blastp_score  = %s\t\t\t\t\t\t||" %
+      COMMAND_OPTIONS.save_raw_blastp_score)
 print("||\tScore_file             = %s\t\t\t\t\t||" %
       COMMAND_OPTIONS.Score_file)
 print("||\tSPECIES                = %s\t\t\t\t\t||" % COMMAND_OPTIONS.SPECIES)
@@ -1266,7 +1266,7 @@ if not sys.argv[1:]:
         (1 3 ***OR*** 2 3): ").split(" ")
     check_mode(MODE) # ! if 1 or 2 is not Passed the system will exist
     # ! Created by Krishna !!
-    SELECTED_SPECIS, backward_selected_species_dic, number_i = read_species(
+    SELECTED_SPECIS_DIC, backward_selected_species_dic, number_i = read_species(
         1)  # read_species(1) will return dictionary type
     SELECTED_NUMBER = input(
         ">> Select Genomes to detect Orthologs(e.g. 1 2 3 4 5 or 1-5) : ")
@@ -1281,7 +1281,7 @@ if not sys.argv[1:]:
         else:
             USER_SELECTED_NUMBER = range(int(SN[0]), int(SN[-1])+1)
             for j in USER_SELECTED_NUMBER:
-                print(SELECTED_SPECIS[j], end=" ")  # loop in Dic
+                print(SELECTED_SPECIS_DIC[j], end=" ")  # loop in Dic
             print("Selected!!")
 
     else:
@@ -1294,7 +1294,7 @@ if not sys.argv[1:]:
             # Greater than Genome list will system error
         else:
             for j in USER_SELECTED_NUMBER:
-                print(SELECTED_SPECIS[j], end=" ")
+                print(SELECTED_SPECIS_DIC[j], end=" ")
             print("Selected!!")
     blastp_matrix = matrix_name()
     cpu_count = int(input("You can use %s Core.\nIf you input >= 2,\
@@ -1309,7 +1309,7 @@ elif sys.argv[1:]:
     cpu_count = COMMAND_OPTIONS.cpu_count
     blastp_matrix = COMMAND_OPTIONS.blastp_matrix
     inflation_factor = COMMAND_OPTIONS.inflation_factor
-    SELECTED_SPECIS, backward_selected_species_dic, number_i = read_species()
+    SELECTED_SPECIS_DIC, backward_selected_species_dic, number_i = read_species()
     USER_SELECTED_NUMBER = [backward_selected_species_dic[ele]
                             for ele in genomes]  # select by value of dictionary
     CLUSTER_OUT = COMMAND_OPTIONS.CLUSTER_OUT     # File Name to save
@@ -1318,8 +1318,8 @@ elif sys.argv[1:]:
 SPECIES = COMMAND_OPTIONS.SPECIES
 BLASTP = COMMAND_OPTIONS.BLASTP
 Score_file = COMMAND_OPTIONS.Score_file
-BP_FOLDER = COMMAND_OPTIONS.BP_FOLDER
-save_raw_bpscore = COMMAND_OPTIONS.save_raw_bpscore
+BLASTP_DATA = COMMAND_OPTIONS.BLASTP_DATA
+save_raw_blastp_score = COMMAND_OPTIONS.save_raw_blastp_score
 threshold_score = COMMAND_OPTIONS.threshold_score
 verbose = COMMAND_OPTIONS.verbose
 infinite_loop = COMMAND_OPTIONS.infinite_loop
@@ -1358,7 +1358,7 @@ with open(Log_file_name, 'w') as log:
         log.write(" " + i)
     log.write("\ngenomes : ")
     for i in USER_SELECTED_NUMBER:
-        log.write(SELECTED_SPECIS[i] + " ")
+        log.write(SELECTED_SPECIS_DIC[i] + " ")
     log.write("\ncpu_count : " + str(cpu_count))
     log.write("\nblastp matrix : " + blastp_matrix)
     if "3" in MODE:
@@ -1367,8 +1367,8 @@ with open(Log_file_name, 'w') as log:
     log.write("\nSPECIES : " + SPECIES)
     log.write("\nBLASTP : " + BLASTP)
     log.write("\nScore file : " + Score_file)
-    log.write("\nBP_FOLDER : " + BP_FOLDER)
-    log.write("\nsave rawblastp score : " + str(save_raw_bpscore))
+    log.write("\nBLASTP_DATA : " + BLASTP_DATA)
+    log.write("\nsave rawblastp score : " + str(save_raw_blastp_score))
     log.write("\n")
 
 start_time_OBH = time.time()
@@ -1390,7 +1390,7 @@ elif "2" in MODE:
     # the values are appended from oneway_tbh(MODE)
     new_calculated_data_list = []
     precalculated_data_list = glob.glob(
-        BP_FOLDER + "*oneway_tbh_Score" + str(threshold_score))
+        BLASTP_DATA + "*oneway_tbh_Score" + str(threshold_score))
     # _S changed to Score file name and copy score file
     # from score_file to blastp_file folder manually to speed up the system
     # glob.glob function may not work properly in windows so  need to check the  result
@@ -1464,11 +1464,11 @@ if "3" in MODE:
                 elif i == k:
                     # If the both species is same, then read_equal_bbh() function will run
                     read_equal_bbh(
-                        Score_file + SELECTED_SPECIS[i] + "_" + SELECTED_SPECIS[k])
+                        Score_file + SELECTED_SPECIS_DIC[i] + "_" + SELECTED_SPECIS_DIC[k])
                 elif i != k:
                     # If both the species are different then read_unequal_bbh() function will run
                     read_unequal_bbh(
-                        Score_file + SELECTED_SPECIS[i] + "_" + SELECTED_SPECIS[k])
+                        Score_file + SELECTED_SPECIS_DIC[i] + "_" + SELECTED_SPECIS_DIC[k])
 
     elif "2" in MODE:
         # The file location is different in each MODE
@@ -1479,9 +1479,9 @@ if "3" in MODE:
             first, second = used_data.split("_")
             if first == second:
                 # if Both genes are same
-                read_equal_bbh(BP_FOLDER + used_data)
+                read_equal_bbh(BLASTP_DATA + used_data)
             elif first != second:
-                read_unequal_bbh(BP_FOLDER + used_data)
+                read_unequal_bbh(BLASTP_DATA + used_data)
 
         for new_data in new_calculated_data_list:
             # "new_calculated_data_list is lilst appended in
