@@ -12,10 +12,10 @@ import os
 ## !XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 window = tk.Tk()
 window.title("owPReMark_Orthologs_Detection_Software")
-window.geometry("1000x800")
+window.geometry("1000x800+100+100")
 window.resizable(0,0)
 
-photo = tk.PhotoImage(file = "./GUI_TK/icons/python2.png")
+photo = tk.PhotoImage(file = "./icons/python2.png")
 window.tk.call("wm","iconphoto",window._w,photo)
 window.title("owPReMark, Software to detect Orthologes among Genomes")
 
