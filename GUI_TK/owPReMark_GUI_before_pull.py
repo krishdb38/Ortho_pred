@@ -24,6 +24,7 @@ from Bio import SeqIO
 
 selected_species = ""
 
+<<<<<<< HEAD
 # !! All Functions for this Program
 # ! Function for Browsing Folder
 def browse_folder(arg):
@@ -31,6 +32,45 @@ def browse_folder(arg):
     fold_name = filedialog.askdirectory()
     arg.set(fold_name+"/")
     return arg
+=======
+## !XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+window = tk.Tk()
+window.title("owPReMark_Orthologs_Detection_Software")
+<<<<<<< HEAD
+window.geometry("1000x800+100+100")
+=======
+window.geometry("1000x800+100+20")
+>>>>>>> c38e7dcd9e4808679daf48d12f7b7daaa03e2af4
+window.resizable(0,0)
+
+photo = tk.PhotoImage(file = "./icons/python2.png")
+window.tk.call("wm","iconphoto",window._w,photo)
+window.title("owPReMark, Software to detect Orthologes among Genomes")
+
+# !! ______________Defined_global_variables_Here_______________
+## Lines
+Tops = tk.Frame(window, width=1000,height =10,bg="green").pack(side="top")
+buttoms = tk.Frame(window,width=1000,height =10,bg="green").pack(side="bottom")
+# frame 1 for main Software
+f1 = tk.Frame(window,width = 800,height = 100,bg = "yellow")
+# buttom_frame = tk.Frame(f1,width=800,height = 10,bg= "red").pack(side = "bottom")
+f1.pack(side = "bottom")
+
+# !!!  XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+# Frame 2 for extra Features
+f2 = tk.Frame(window,width = 500,height = 200,bg= "#FEF8DD",bd =15,).place(x=490,y=510)
+f3 = tk.Frame(window,width = 500,height = 350,bg= "#8DE4FD").place(x=490,y=180)
+
+# !!!!  XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+prog_label = tk.Label(window,font = ("arial",40,"bold"),text = "owPReMark V1.0",fg = "white",bg="#093145")
+prog_label.pack()
+
+# !! Current Time
+local_time=time.asctime(time.localtime(time.time()))
+time_label = tk.Label(window,font = ("arial",18,"bold"),\
+                      text ="Started-->  "+local_time,fg = "#093145", bd =10)
+time_label.pack()
+>>>>>>> 58def66238164c819ea17626d64c6deb3cab3ebb
 
 # ! Functrion for browsing File
 def browse_file(arg):
