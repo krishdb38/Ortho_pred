@@ -1,0 +1,16 @@
+2020-04-23 13:36:37.930445CAC
+genomes : 
+['AAE', 'CAC']
+cpu_count : 1
+blastp matrix : BLOSUM45
+inflation_factor : 1.5
+Cluster out : results
+SPECIES : 
+BLASTP : blastp
+Score file : ./score_file/
+BLASTP_DATA : /mnt/c/Users/user/Desktop/DL_Bio/Ortho_pred/GUI_TK/blastp_folder/
+save rawblastp score : /mnt/c/Users/user/Desktop/DL_Bio/Ortho_pred/GUI_TK/blastp_folder/
+backward_best_hit took 0minutes
+BLASTP + Best_Hit + backward_best_hit searches took 6.961425145467123e-05 minutes
+MCL algorithm and Ortholog clustering took 0.11517868 minutes
+owPReMark program took 0.11531038minutes

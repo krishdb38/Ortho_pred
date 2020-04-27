@@ -1,0 +1,12 @@
+2020-04-23 08:41:56.847427CAC
+genomes : 
+['AAE', 'CAC']
+cpu_count : 5
+blastp matrix : BLOSUM45
+inflation_factor : 1.5
+Cluster out : results
+SPECIES : 
+BLASTP : blastp
+Score file : ./score_file/
+BLASTP_DATA : /mnt/c/Users/user/Desktop/DL_Bio/Ortho_pred/GUI_TK/species/
+save rawblastp score : /mnt/c/Users/user/Desktop/DL_Bio/Ortho_pred/GUI_TK/species/

@@ -1,0 +1,12 @@
+2020-04-23 10:04:18.385531
+genomes : 
+['', '']
+cpu_count : 1
+blastp matrix : BLOSUM45
+inflation_factor : 1.5
+Cluster out : results
+SPECIES : 
+BLASTP : blastp
+Score file : ./score_file/
+BLASTP_DATA : /mnt/c/Users/user/Desktop/DL_Bio/Ortho_pred/GUI_TK/
+save rawblastp score : /mnt/c/Users/user/Desktop/DL_Bio/Ortho_pred/GUI_TK/

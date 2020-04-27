@@ -1,0 +1,12 @@
+2020-04-23 10:19:08.959991 
+genomes : 
+[' ', ' ']
+cpu_count : 1
+blastp matrix : BLOSUM45
+inflation_factor : 1.5
+Cluster out : results
+SPECIES : 
+BLASTP : blastp
+Score file : ./score_file/
+BLASTP_DATA : 
+save rawblastp score : 
